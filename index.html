@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>@c.pulisic11 · Christian Pulisic fan page</title>
+  <meta name="description" content="Christian Pulisic fan tracker: Instagram growth, AC Milan and USA fixtures, standings and club stats. English / Italiano.">
+  <meta property="og:title" content="Christian Pulisic · #11 Tracker">
+  <meta property="og:description" content="Instagram growth, fixtures, standings and club stats — EN / IT.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23C0182F'/%3E%3Ctext x='16' y='23' font-family='Arial Black,Arial' font-weight='900' font-size='17' text-anchor='middle' fill='%23fff'%3E11%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;900&family=Public+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <a class="skip" href="#main" data-i18n="skip">Skip to content</a>
+
+  <header class="topbar">
+    <a class="brand" href="#top" aria-label="Christian Pulisic">CP<span>11</span></a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#fanpage" data-i18n="nav.fan">Fan page</a>
+      
+      <a href="#matches" data-i18n="nav.matches">Matches</a>
+      <a href="#tables" data-i18n="nav.tables">Tables</a>
+      <a href="#stats" data-i18n="nav.stats">Club stats</a>
+      <a href="#profile" data-i18n="nav.profile">Profile</a>
+    </nav>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" data-lang="en" aria-pressed="true">EN</button>
+      <button type="button" data-lang="it" aria-pressed="false">IT</button>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- HERO -->
+    <section class="hero" id="top">
+      <div class="hero-text">
+        <p class="hero-kicker" data-i18n="hero.kicker">The @c.pulisic11 fan page, on the web</p>
+        <h1 class="hero-name">Christian<br>Pulisic</h1>
+        <p class="hero-lede" data-i18n="hero.lede">A fan dashboard for Milan's number eleven: his Instagram, the next matches for club and country, where Milan stand, and what he has done on the pitch.</p>
+        <dl class="hero-facts" id="heroFacts"></dl>
+      </div>
+      <div class="hero-number" aria-hidden="true">11</div>
+    </section>
+
+    <div class="layout">
+    <!-- FAN PAGE: the main section -->
+    <section class="col-main" id="fanpage" aria-labelledby="fanTitle">
+      <div class="fan-head">
+        <a class="fan-avatar" id="fanAvatarLink" href="https://www.instagram.com/c.pulisic11/" target="_blank" rel="noopener" aria-label="@c.pulisic11"><span>11</span></a>
+        <div class="fan-id">
+          <h2 id="fanTitle">@c.pulisic11</h2>
+          <p class="fan-name" id="fanName"></p>
+          <ul class="fan-counts" id="fanCounts"></ul>
+          <div class="fan-bio" id="fanBio"></div>
+        </div>
+        <a class="btn" id="fanFollow" href="https://www.instagram.com/c.pulisic11/" target="_blank" rel="noopener" data-i18n="fan.follow">Follow on Instagram</a>
+      </div>
+
+      <ul class="kpis" id="fanKpis"></ul>
+
+      <div class="feed-bar">
+        <h3 data-i18n="fan.feed">Posts</h3>
+        <div class="tabs" role="tablist" aria-label="Sort posts">
+          <button role="tab" type="button" data-sort="date" aria-selected="true" data-i18n="fan.sortNew">Newest</button>
+          <button role="tab" type="button" data-sort="likes" aria-selected="false" data-i18n="fan.sortLikes">Most liked</button>
+          <button role="tab" type="button" data-sort="comments" aria-selected="false" data-i18n="fan.sortComments">Most commented</button>
+        </div>
+      </div>
+      <div id="fanFeed"></div>
+      <button type="button" class="btn ghost" id="feedMore" hidden data-i18n="fan.more">Show more posts</button>
+
+      <div class="fan-charts">
+        <figure class="chart-card">
+          <figcaption>
+            <span class="chart-title" data-i18n="fan.likesChart">Likes on the latest posts</span>
+            <button type="button" class="linkish" data-toggle-table="likesTable" data-i18n="common.showTable">Show as table</button>
+          </figcaption>
+          <div class="chart" id="likesChart" role="img"></div>
+          <div class="table-wrap" id="likesTable" hidden></div>
+          <p class="chart-note" id="likesNote"></p>
+        </figure>
+        <figure class="chart-card">
+          <figcaption>
+            <span class="chart-title" data-i18n="fan.followersChart">Fan page followers over time</span>
+            <button type="button" class="linkish" data-toggle-table="fanFollowersTable" data-i18n="common.showTable">Show as table</button>
+          </figcaption>
+          <div class="chart" id="fanFollowersChart" role="img"></div>
+          <div class="table-wrap" id="fanFollowersTable" hidden></div>
+          <p class="chart-note" id="fanFollowersNote"></p>
+        </figure>
+      </div>
+    </section>
+
+    <aside class="col-side" aria-label="Widgets">
+      <section class="widget w-next" id="wNext" aria-labelledby="nextTitle">
+        <div id="nextMatch"><h2 id="nextTitle" class="w-title" data-i18n="next.title">Next match</h2></div>
+      </section>
+
+      <section class="widget w-athlete" id="athlete" aria-labelledby="athTitle">
+        <h2 id="athTitle" class="w-title" data-i18n="ath.title">Pulisic's own Instagram</h2>
+        <p class="w-sub" id="athSub"></p>
+        <ul class="ath-counts" id="athCounts"></ul>
+        <div id="athFeed"></div>
+      </section>
+
+      <section class="widget" id="wFixtures" aria-labelledby="wFixTitle">
+        <h2 id="wFixTitle" class="w-title" data-i18n="w.fixtures">Coming up</h2>
+        <ol class="mini-fx" id="miniFixtures"></ol>
+        <a class="w-more" href="#matches" data-i18n="w.allMatches">All matches</a>
+      </section>
+
+      <section class="widget" id="wTable" aria-labelledby="wTableTitle">
+        <h2 id="wTableTitle" class="w-title">Serie A</h2>
+        <p class="w-sub" id="miniTableNote"></p>
+        <table class="mini-table" id="miniTable"></table>
+        <a class="w-more" href="#tables" data-i18n="w.fullTable">Full table</a>
+      </section>
+
+      <section class="widget" id="wStats" aria-labelledby="wStatsTitle">
+        <h2 id="wStatsTitle" class="w-title" data-i18n="w.season">Pulisic this season</h2>
+        <p class="w-sub" id="miniStatsNote"></p>
+        <dl class="mini-stats" id="miniStats"></dl>
+        <a class="w-more" href="#stats" data-i18n="w.allStats">All stats</a>
+      </section>
+    </aside>
+    </div>
+
+    <!-- MATCHES -->
+    <section class="block" id="matches" aria-labelledby="matchesTitle">
+      <div class="block-head">
+        <h2 id="matchesTitle" data-i18n="matches.title">Upcoming matches</h2>
+        <p class="block-sub" data-i18n="matches.sub">Kick-off times are shown in your own time zone.</p>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Team filter">
+        <button role="tab" type="button" data-filter="all" aria-selected="true" data-i18n="matches.all">All</button>
+        <button role="tab" type="button" data-filter="milan" aria-selected="false">AC Milan</button>
+        <button role="tab" type="button" data-filter="usa" aria-selected="false" data-i18n="matches.usa">USA</button>
+      </div>
+      <ol class="fixtures" id="fixtures"></ol>
+
+      <h3 class="subhead" data-i18n="matches.recent">Recent Milan results</h3>
+      <ol class="results" id="results"></ol>
+    </section>
+
+    <!-- TABLES -->
+    <section class="block" id="tables" aria-labelledby="tablesTitle">
+      <div class="block-head">
+        <h2 id="tablesTitle" data-i18n="tables.title">Where Milan stand</h2>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Competition">
+        <button role="tab" type="button" data-comp="serieA" aria-selected="true">Serie A</button>
+        <button role="tab" type="button" data-comp="europaLeague" aria-selected="false">Europa League</button>
+      </div>
+      <div id="standings"></div>
+    </section>
+
+    <!-- CLUB STATS -->
+    <section class="block" id="stats" aria-labelledby="statsTitle">
+      <div class="block-head">
+        <h2 id="statsTitle" data-i18n="stats.title">For the club</h2>
+        <p class="block-sub" id="statsSub"></p>
+      </div>
+      <div class="stats-grid">
+        <dl class="season" id="seasonStats"></dl>
+        <figure class="chart-card">
+          <figcaption>
+            <span class="chart-title" data-i18n="stats.chartTitle">Serie A goals and assists by season</span>
+            <button type="button" class="linkish" data-toggle-table="seasonsTable" data-i18n="common.showTable">Show as table</button>
+          </figcaption>
+          <div class="legend" id="seasonsLegend"></div>
+          <div class="chart" id="seasonsChart" role="img"></div>
+          <div class="table-wrap" id="seasonsTable" hidden></div>
+        </figure>
+      </div>
+      <p class="totals" id="milanTotals"></p>
+    </section>
+
+    <!-- PROFILE -->
+    <section class="block" id="profile" aria-labelledby="profileTitle">
+      <div class="block-head">
+        <h2 id="profileTitle" data-i18n="profile.title">Profile</h2>
+      </div>
+      <div class="profile-grid">
+        <div>
+          <h3 data-i18n="profile.career">Club career</h3>
+          <ol class="timeline" id="career"></ol>
+          <h3 data-i18n="profile.country">For the USA</h3>
+          <p id="intl"></p>
+        </div>
+        <div>
+          <h3 data-i18n="profile.honours">Major honours</h3>
+          <ul class="honours" id="honours"></ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p id="updated"></p>
+    <p data-i18n="foot.disclaimer">Unofficial fan page. Not affiliated with Christian Pulisic, AC Milan, U.S. Soccer or Meta. Instagram figures are public counts gathered by third-party trackers.</p>
+    <details>
+      <summary data-i18n="foot.sources">Sources</summary>
+      <ul id="sources"></ul>
+    </details>
+  </footer>
+
+  <div class="tooltip" id="tooltip" role="status" aria-live="polite" hidden></div>
+
+  <script src="assets/data.js"></script>
+  <script src="assets/i18n.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
