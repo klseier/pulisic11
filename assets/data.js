@@ -84,6 +84,8 @@ window.SITE_DATA = {
     { team: "milan", comp: "Serie A · MD 13", home: "Cagliari", away: "AC Milan", date: "2026-11-30T20:45:00+01:00", venue: "Cagliari" },
     { team: "milan", comp: "Serie A · MD 14", home: "AC Milan", away: "Parma", date: "2026-12-06T20:45:00+01:00", venue: "San Siro, Milano" },
     { team: "milan", comp: "Europa League · MD 6", home: "AC Milan", away: "Sunderland", date: "2026-12-10T21:00:00+01:00", venue: "San Siro, Milano", timeTbc: true },
+    { team: "milan", comp: "Europa League · MD 7", home: "Levski Sofia", away: "AC Milan", date: "2027-01-21T21:00:00+01:00", venue: "Sofia" },
+    { team: "milan", comp: "Europa League · MD 8", home: "AC Milan", away: "Ararat-Armenia", date: "2027-01-28T21:00:00+01:00", venue: "San Siro, Milano" },
   ],
 
   recentResults: [
@@ -135,7 +137,7 @@ window.SITE_DATA = {
       asOf: "2026-11-08",
       apps: 8, starts: 6, goals: 4, assists: 1, shots: 11, shotsOnTarget: 7, yellow: 2,
     },
-    milanTotals: { apps: 141, goals: 44, assists: 28, asOf: "2026-10-30" },
+    milanTotals: { apps: 144, goals: 46, assists: 28, asOf: "2026-11-10" }, // club figure 141/44/28 on 30 Oct + Inter (goal), Ferencváros (sub), Genoa (goal)
     seasons: [
       { season: "2023/24", apps: 36, goals: 12, assists: 8 },
       { season: "2024/25", apps: 34, goals: 11, assists: 9 },
