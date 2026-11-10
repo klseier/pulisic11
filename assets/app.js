@@ -73,7 +73,6 @@
     if (live.clubStats && live.clubStats.milanTotals) D.clubStats.milanTotals = live.clubStats.milanTotals;
     if (live.intl && live.intl.caps) { D.player.caps = live.intl.caps; D.player.intlGoals = live.intl.goals; D.player.intlAsOf = live.intl.asOf; }
     if (live.pulisicLog) D.pulisicLog = live.pulisicLog;
-    if (live.news) D.news = live.news;
     if (live.goals && live.goals.list && live.goals.list.length) {
       // the hand-checked archive in data.js is authoritative; the feed only adds matches played after it
       // (and fills in a minute when the archive has none for that match)
@@ -670,25 +669,6 @@
   }
 
   /* ---------- sidebar mini widgets ---------- */
-  /* latest news headlines (language of the page, falling back to the other one) */
-  function renderNews() {
-    var w = $("wNews"), N = D.news || {};
-    if (!w) return;
-    var list = (N[lang] && N[lang].length ? N[lang] : N[lang === "it" ? "en" : "it"]) || [];
-    if (!list.length) { w.hidden = true; return; }
-    function ago(iso) {
-      var ms = Date.now() - Date.parse(iso);
-      if (!(ms >= 0)) return "";
-      var h = Math.floor(ms / 3600e3);
-      return h < 1 ? t("w.agoNow") : h < 24 ? t("w.agoH", { n: h }) : t("w.agoD", { n: Math.floor(h / 24) });
-    }
-    $("newsList").innerHTML = list.slice(0, 5).map(function (n) {
-      return '<li><a href="' + esc(n.url) + '" target="_blank" rel="noopener">' + esc(n.title) + '</a><span class="news-meta">' +
-        esc(n.source || "") + (n.at ? " · " + esc(ago(n.at)) : "") + "</span></li>";
-    }).join("");
-    w.hidden = false;
-  }
-
   function renderMiniFixtures() {
     var list = upcoming().slice(1, 5);
     $("miniFixtures").innerHTML = list.map(function (f) {
@@ -798,7 +778,7 @@
   function renderAll() {
     applyStatic(); renderHero(); renderNext(); renderFan(); renderAthlete();
     renderFixtures(); renderStandings(); renderStats(); renderProfile();
-    renderMiniFixtures(); renderNews(); renderMiniTable(); renderMiniStats(); renderGoals(); renderHeroAch(); fitNick();
+    renderMiniFixtures(); renderMiniTable(); renderMiniStats(); renderGoals(); renderHeroAch(); fitNick();
   }
 
   /* ---------- events ---------- */
