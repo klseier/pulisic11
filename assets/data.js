@@ -68,7 +68,6 @@ window.SITE_DATA = {
     posts: 282,
     source: "HypeAuditor / Instastatistics, Nov 2026",
     history: [
-      { date: "2026-10-01", followers: 7726222, estimated: true },
       { date: "2026-11-09", followers: 7706907 },
     ],
     postsList: [],

@@ -382,3 +382,20 @@ td.pts { font-weight: 700; }
 }
 .layout .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 560px) { .layout .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ---------- Compact hero: the fan page should be reachable in one scroll ---------- */
+.hero { padding-top: clamp(1.5rem, 4vw, 3rem); gap: 1.5rem; align-items: center; }
+.hero-name { font-size: clamp(3rem, 7.5vw, 6.5rem); }
+.hero-lede { margin: 1rem 0 1.25rem; }
+.hero-facts { grid-template-columns: repeat(5, minmax(0, auto)); gap: .75rem 1.75rem; margin-bottom: 0; }
+.hero-number {
+  font-size: clamp(9rem, 22vw, 19rem); line-height: .8; margin-bottom: 0;
+  background: repeating-linear-gradient(90deg, var(--rosso) 0 0.11em, var(--nero) 0.11em 0.16em);
+  -webkit-background-clip: text; background-clip: text;
+}
+.layout { padding-top: clamp(2rem, 4vw, 3rem); }
+.w-athlete .tile-meta span + span { display: none; }
+@media (max-width: 900px) {
+  .hero-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hero-number { font-size: clamp(7rem, 34vw, 12rem); }
+}

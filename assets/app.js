@@ -54,6 +54,12 @@
     }
     if (live.recentResults && live.recentResults.length) D.recentResults = live.recentResults;
     if (live.standings) Object.keys(live.standings).forEach(function (k) { D.standings[k] = live.standings[k]; });
+    if (live.clubStats && live.clubStats.currentSeason) {
+      var cur = D.clubStats.currentSeason, L2 = live.clubStats.currentSeason;
+      ["asOf", "apps", "goals", "assists"].forEach(function (k) { if (L2[k] != null) cur[k] = L2[k]; });
+      cur.starts = null; cur.shots = null; // not in the automatic feed, so hide them instead of showing stale numbers
+      D.clubStats.seasons.forEach(function (x) { if (x.live) { x.apps = cur.apps; x.goals = cur.goals; x.assists = cur.assists; } });
+    }
     if (live.updated && live.updated > D.updated) D.updated = live.updated;
   }
 
@@ -264,7 +270,7 @@
     var meta = '<span class="tile-meta">' +
       (p.likes != null ? "<span>♥ " + compact(p.likes) + "</span>" : "") +
       (p.comments != null ? "<span>💬 " + compact(p.comments) + "</span>" : "") + "</span>";
-    var kind = p.type === "VIDEO" ? '<span class="tile-kind">▶ ' + esc(t("fan.video")) + "</span>" : p.type === "CAROUSEL_ALBUM" ? '<span class="tile-kind">❐ ' + esc(t("fan.carousel")) + "</span>" : "";
+    var kind = p.type === "VIDEO" ? '<span class="tile-kind">▶ ' + esc(t("fan.video")) + "</span>" : "";
     var alt = (p.caption || "").slice(0, 120);
     var media = p.image ? '<img src="' + esc(p.image) + '" alt="' + esc(alt) + '" loading="lazy" referrerpolicy="no-referrer">' : '<span class="tile-noimg">' + esc(alt || dateStr(p.date)) + "</span>";
     return '<a class="tile' + (big ? " big" : "") + '" href="' + esc(p.url) + '" target="_blank" rel="noopener">' + media + kind +
@@ -422,9 +428,9 @@
     var items = [
       [t("stats.apps"), c.apps, ""], [t("stats.starts"), c.starts, ""],
       [t("stats.goals"), c.goals, "hl"], [t("stats.assists"), c.assists, ""],
-      [t("stats.shots"), c.shots + " <small>(" + c.shotsOnTarget + ")</small>", ""],
-      [t("stats.ga90"), ((c.goals + c.assists) / c.apps).toFixed(2), ""],
-    ];
+      [t("stats.shots"), c.shots == null ? null : c.shots + " <small>(" + c.shotsOnTarget + ")</small>", ""],
+      [t("stats.ga90"), c.apps ? ((c.goals + c.assists) / c.apps).toFixed(2) : null, ""],
+    ].filter(function (i) { return i[1] != null; });
     $("seasonStats").innerHTML = '<div style="grid-column:1/-1;border-bottom:0;padding-bottom:0"><dt>' + esc(c.label) + "</dt></div>" +
       items.map(function (i) { return '<div class="' + i[2] + '"><dt>' + esc(i[0]) + "</dt><dd>" + i[1] + "</dd></div>"; }).join("");
     var tot = cs.milanTotals;

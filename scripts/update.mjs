@@ -59,6 +59,25 @@ if (FD) {
     }));
     console.log(`Milan fixtures: ${live.fixtures.length}, results: ${live.recentResults.length}`);
   } catch (e) { console.warn("Milan fixtures skipped:", e.message); }
+
+  try {
+    // Pulisic's Serie A numbers from the league scorers list (he appears once he has scored)
+    const sc = await getJSON(`${base}/competitions/SA/scorers?limit=200`, h);
+    const me = sc.scorers.find((x) => /pulisic/i.test(x.player?.name || ""));
+    if (me) {
+      live.clubStats = {
+        currentSeason: {
+          asOf: today,
+          apps: me.playedMatches ?? undefined,
+          goals: me.goals ?? 0,
+          assists: me.assists ?? 0,
+        },
+      };
+      console.log(`Pulisic: ${me.goals} goals, ${me.assists ?? 0} assists in ${me.playedMatches} matches`);
+    } else {
+      console.log("Pulisic not in the scorers list yet — stats left as is.");
+    }
+  } catch (e) { console.warn("Scorers skipped:", e.message); }
 } else {
   console.log("FOOTBALL_DATA_TOKEN not set — football data left as is.");
 }
