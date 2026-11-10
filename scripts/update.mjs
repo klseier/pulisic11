@@ -1,6 +1,7 @@
 // Daily updater: writes data/live.json, which the page merges over assets/data.js.
 // Runs in GitHub Actions (Node 20+, no dependencies). Every part is optional:
 //   FOOTBALL_DATA_TOKEN  -> Serie A table + Milan fixtures/results (football-data.org, free tier)
+//   API_FOOTBALL_KEY     -> Europa League table, USA fixtures, Pulisic's full stats (api-sports.io, free tier)
 //   IG_USER_ID + IG_ACCESS_TOKEN -> Instagram public counts via the official Graph API
 //                                   "Business Discovery" endpoint (needs your own IG Business/Creator
 //                                   account linked to a Facebook Page — see README)
@@ -49,15 +50,16 @@ if (FD) {
 
   try {
     const up = await getJSON(`${base}/teams/${MILAN_ID}/matches?status=SCHEDULED,TIMED&limit=8`, h);
-    live.fixtures = up.matches.map((m) => ({
+    live.fd = live.fd || {};
+    live.fd.fixtures = up.matches.map((m) => ({
       team: "milan", comp: compName(m), home: name(m.homeTeam), away: name(m.awayTeam), date: m.utcDate, venue: m.venue || "",
     }));
     const done = await getJSON(`${base}/teams/${MILAN_ID}/matches?status=FINISHED&limit=40`, h);
-    live.recentResults = done.matches.slice(-5).reverse().map((m) => ({
+    live.fd.results = done.matches.slice(-5).reverse().map((m) => ({
       comp: m.competition?.name || "", home: name(m.homeTeam), away: name(m.awayTeam),
       score: `${m.score.fullTime.home}–${m.score.fullTime.away}`, date: m.utcDate.slice(0, 10),
     }));
-    console.log(`Milan fixtures: ${live.fixtures.length}, results: ${live.recentResults.length}`);
+    console.log(`Milan Serie A fixtures: ${live.fd.fixtures.length}, results: ${live.fd.results.length}`);
   } catch (e) { console.warn("Milan fixtures skipped:", e.message); }
 
   try {
@@ -65,14 +67,9 @@ if (FD) {
     const sc = await getJSON(`${base}/competitions/SA/scorers?limit=200`, h);
     const me = sc.scorers.find((x) => /pulisic/i.test(x.player?.name || ""));
     if (me) {
-      live.clubStats = {
-        currentSeason: {
-          asOf: today,
-          // playedMatches in this feed counts the team's matches, not his appearances, so it is not used
-          goals: me.goals ?? 0,
-          assists: me.assists ?? 0,
-        },
-      };
+      // playedMatches in this feed counts the team's matches, not his appearances, so it is not used
+      live.fd = live.fd || {};
+      live.fd.stats = { asOf: today, goals: me.goals ?? 0, assists: me.assists ?? 0 };
       console.log(`Pulisic: ${me.goals} goals, ${me.assists ?? 0} assists`);
     } else {
       console.log("Pulisic not in the scorers list yet — stats left as is.");
@@ -80,6 +77,139 @@ if (FD) {
   } catch (e) { console.warn("Scorers skipped:", e.message); }
 } else {
   console.log("FOOTBALL_DATA_TOKEN not set — football data left as is.");
+}
+
+/* ---------- API-Football (api-sports.io), free plan: 100 requests/day ----------
+   Runs about once a day (and on every manual run) and costs ~12 requests:
+   Europa League table, all Milan and USA fixtures/results, Pulisic's appearances,
+   starts and shots, and his all-competition Milan totals. */
+const AFK = process.env.API_FOOTBALL_KEY;
+const AF_EVERY = 20 * 3600e3;
+const manual = process.env.GITHUB_EVENT_NAME && process.env.GITHUB_EVENT_NAME !== "schedule";
+if (AFK && (manual || !live.af?.at || Date.now() - Date.parse(live.af.at) > AF_EVERY)) {
+  const base = "https://v3.football.api-sports.io";
+  let used = 0;
+  async function af(path) {
+    used++;
+    const j = await getJSON(base + path, { "x-apisports-key": AFK });
+    const errs = j.errors && (Array.isArray(j.errors) ? j.errors : Object.values(j.errors));
+    if (errs && errs.length) throw new Error(errs.join("; "));
+    return j.response;
+  }
+  const A = live.af || {};
+  A.ids = A.ids || {};
+  const seasonNow = (() => { const d = new Date(); return d.getUTCMonth() >= 6 ? d.getUTCFullYear() : d.getUTCFullYear() - 1; })();
+  const round = (r) => (r || "").replace(/^(Regular Season|League Stage|League phase)\s*-\s*/i, "MD ");
+  const nm = (t) => (t.id === A.ids.milan ? "AC Milan" : t.id === A.ids.usa ? "USA" : t.name);
+  const fx = (m, team) => ({
+    team, comp: `${m.league.name}${m.league.round ? " · " + round(m.league.round) : ""}`,
+    home: nm(m.teams.home), away: nm(m.teams.away), date: m.fixture.date,
+    venue: [m.fixture.venue?.name, m.fixture.venue?.city].filter(Boolean).join(", "),
+    timeTbc: m.fixture.status?.short === "TBD" || undefined,
+  });
+  try {
+    if (!A.ids.milan) A.ids.milan = (await af("/teams?name=AC%20Milan"))[0]?.team.id;
+    if (!A.ids.usa) A.ids.usa = (await af("/teams?name=USA")).find((x) => x.team.national)?.team.id;
+    if (!A.ids.el) A.ids.el = (await af("/leagues?id=3"))[0]?.league.id;
+    console.log("API-Football ids:", JSON.stringify(A.ids));
+
+    try {
+      const st = await af(`/standings?league=${A.ids.el}&season=${seasonNow}`);
+      const tbl = st[0]?.league.standings[0] || [];
+      if (tbl.length) {
+        A.europaLeague = {
+          label: `UEFA Europa League ${seasonNow}/${String(seasonNow + 1).slice(2)}`,
+          asOf: today,
+          note: { en: `League phase, after matchday ${tbl[0].all.played}`, it: `Fase campionato, dopo la ${tbl[0].all.played}ª giornata` },
+          zones: { r16: [1, 8], po: [9, 24], out: [25, 36] },
+          rows: tbl.map((r) => [r.rank, nm(r.team), r.all.played, r.all.win, r.all.draw, r.all.lose, r.points]),
+        };
+        console.log(`Europa League table: ${tbl.length} rows`);
+      }
+    } catch (e) { console.warn("Europa League table skipped:", e.message); }
+
+    try {
+      const next = await af(`/fixtures?team=${A.ids.milan}&next=10`);
+      const last = await af(`/fixtures?team=${A.ids.milan}&last=5`);
+      A.milanFixtures = next.map((m) => fx(m, "milan"));
+      A.milanResults = last.map((m) => ({
+        comp: m.league.name, home: nm(m.teams.home), away: nm(m.teams.away),
+        score: `${m.goals.home}–${m.goals.away}`, date: m.fixture.date.slice(0, 10),
+      }));
+      console.log(`Milan fixtures (all competitions): ${A.milanFixtures.length}, results: ${A.milanResults.length}`);
+    } catch (e) { console.warn("Milan fixtures (API-Football) skipped:", e.message); }
+
+    try {
+      const nextUsa = await af(`/fixtures?team=${A.ids.usa}&next=5`);
+      A.usaFixtures = nextUsa.map((m) => fx(m, "usa"));
+      console.log(`USA fixtures: ${A.usaFixtures.length}`);
+    } catch (e) { console.warn("USA fixtures skipped:", e.message); }
+
+    try {
+      if (!A.ids.pulisic) {
+        const found = await af(`/players?team=${A.ids.milan}&season=${seasonNow}&search=pulisic`);
+        A.ids.pulisic = found[0]?.player.id;
+      }
+      const milanStats = async (season) => {
+        const r = await af(`/players?id=${A.ids.pulisic}&season=${season}`);
+        return (r[0]?.statistics || []).filter((x) => x.team.id === A.ids.milan);
+      };
+      const cur = await milanStats(seasonNow);
+      const sa = cur.find((x) => /serie a/i.test(x.league.name));
+      if (sa) {
+        A.serieA = {
+          asOf: today, apps: sa.games.appearences ?? 0, starts: sa.games.lineups ?? 0,
+          goals: sa.goals.total ?? 0, assists: sa.goals.assists ?? 0,
+          shots: sa.shots.total ?? 0, shotsOnTarget: sa.shots.on ?? 0,
+        };
+        console.log(`Pulisic Serie A: ${A.serieA.apps} apps (${A.serieA.starts} starts), ${A.serieA.goals} G, ${A.serieA.assists} A`);
+      }
+      // all-competition Milan totals since he joined (2023/24)
+      let apps = 0, goals = 0, assists = 0;
+      for (let y = 2023; y <= seasonNow; y++) {
+        const list = y === seasonNow ? cur : await milanStats(y);
+        list.forEach((x) => { apps += x.games.appearences || 0; goals += x.goals.total || 0; assists += x.goals.assists || 0; });
+      }
+      if (apps) { A.milanTotals = { apps, goals, assists, asOf: today }; console.log(`Milan totals: ${apps} apps, ${goals} G, ${assists} A`); }
+    } catch (e) { console.warn("Pulisic stats (API-Football) skipped:", e.message); }
+
+    A.at = new Date().toISOString();
+  } catch (e) { console.warn("API-Football skipped:", e.message); }
+  live.af = A;
+  console.log(`API-Football requests used this run: ${used}`);
+} else if (AFK) {
+  console.log("API-Football: already updated in the last 20 h — skipped to save the daily quota.");
+} else {
+  console.log("API_FOOTBALL_KEY not set — Europa League, USA and full stats left as is.");
+}
+
+/* ---------- combine both football sources into what the page reads ---------- */
+{
+  const A = live.af || {}, F = live.fd || {};
+  const byDay = new Map();
+  const add = (f) => { const k = f.team + "|" + String(f.date).slice(0, 10); if (!byDay.has(k)) byDay.set(k, f); };
+  (F.fixtures || []).forEach(add);           // hourly, Serie A
+  (A.milanFixtures || []).forEach(add);      // daily, all competitions
+  (A.usaFixtures || []).forEach(add);
+  if (byDay.size) live.fixtures = [...byDay.values()].sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
+
+  const res = new Map();
+  [...(F.results || []), ...(A.milanResults || [])].forEach((r) => { if (!res.has(r.date)) res.set(r.date, r); });
+  if (res.size) live.recentResults = [...res.values()].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 5);
+
+  if (A.europaLeague) { live.standings = live.standings || {}; live.standings.europaLeague = A.europaLeague; }
+
+  const cs = A.serieA ? { ...A.serieA } : {};
+  if (F.stats) {
+    // football-data refreshes goals/assists hourly; keep the higher (newer) count
+    cs.goals = Math.max(cs.goals ?? 0, F.stats.goals); cs.assists = Math.max(cs.assists ?? 0, F.stats.assists);
+    cs.asOf = A.serieA && A.serieA.asOf > F.stats.asOf ? A.serieA.asOf : F.stats.asOf;
+  }
+  if (Object.keys(cs).length || A.milanTotals) {
+    live.clubStats = {};
+    if (Object.keys(cs).length) live.clubStats.currentSeason = cs;
+    if (A.milanTotals) live.clubStats.milanTotals = A.milanTotals;
+  }
 }
 
 /* ---------- Instagram Graph API: Business Discovery ---------- */
