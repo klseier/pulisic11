@@ -36,7 +36,7 @@
     ["fanPage", "athlete"].forEach(function (key) {
       var L = live[key], P = D[key];
       if (!L) return;
-      ["followers", "following", "posts", "name", "bio", "source"].forEach(function (k) { if (L[k] != null) P[k] = L[k]; });
+      ["followers", "following", "posts", "name", "bio", "source", "avatar", "fetchedAt", "prevFetchedAt"].forEach(function (k) { if (L[k] != null) P[k] = L[k]; });
       if (L.followers != null) P.followersApprox = false;
       if (L.history && L.history.length) {
         var byDate = {};
@@ -57,7 +57,9 @@
     if (live.clubStats && live.clubStats.currentSeason) {
       var cur = D.clubStats.currentSeason, L2 = live.clubStats.currentSeason;
       ["asOf", "apps", "goals", "assists"].forEach(function (k) { if (L2[k] != null) cur[k] = L2[k]; });
-      cur.starts = null; cur.shots = null; // not in the automatic feed, so hide them instead of showing stale numbers
+      // appearances, starts and shots are not in the automatic feed: hide them instead of showing stale numbers
+      if (L2.apps == null) cur.apps = null;
+      cur.starts = null; cur.shots = null;
       D.clubStats.seasons.forEach(function (x) { if (x.live) { x.apps = cur.apps; x.goals = cur.goals; x.assists = cur.assists; } });
     }
     if (live.updated && live.updated > D.updated) D.updated = live.updated;
@@ -266,14 +268,19 @@
   }
 
   /* one post: image tile when an image URL is known, else an official embed */
-  function tileHtml(p, big) {
+  function tileHtml(p, big, tr) {
     var meta = '<span class="tile-meta">' +
       (p.likes != null ? "<span>♥ " + compact(p.likes) + "</span>" : "") +
       (p.comments != null ? "<span>💬 " + compact(p.comments) + "</span>" : "") + "</span>";
     var kind = p.type === "VIDEO" ? '<span class="tile-kind">▶ ' + esc(t("fan.video")) + "</span>" : "";
     var alt = (p.caption || "").slice(0, 120);
     var media = p.image ? '<img src="' + esc(p.image) + '" alt="' + esc(alt) + '" loading="lazy" referrerpolicy="no-referrer">' : '<span class="tile-noimg">' + esc(alt || dateStr(p.date)) + "</span>";
-    return '<a class="tile' + (big ? " big" : "") + '" href="' + esc(p.url) + '" target="_blank" rel="noopener">' + media + kind +
+    var trend = "";
+    if (tr) {
+      trend = '<span class="tile-trend' + (tr.rank <= 3 ? " lead" : "") + '">' + (tr.rank <= 3 ? '<b>#' + tr.rank + "</b>" : "") +
+        "+" + num(tr.gain) + " ♥" + (tr.isNew ? " · " + esc(t("trend.new")) : "") + "</span>";
+    }
+    return '<a class="tile' + (big ? " big" : "") + (tr && tr.rank <= 3 ? " is-lead" : "") + '" href="' + esc(p.url) + '" target="_blank" rel="noopener">' + media + kind + trend +
       '<span class="tile-foot"><span class="tile-date">' + esc(dateStr(p.date, { day: "numeric", month: "short" })) + "</span>" + meta + "</span></a>";
   }
   function embedHtml(p) {
@@ -289,6 +296,7 @@
     var f = D.fanPage, h = f.handle, url = profileUrl(h);
     $("fanTitle").textContent = "@" + h;
     $("fanAvatarLink").href = url; $("fanFollow").href = url;
+    renderAvatars(f);
     $("fanName").textContent = f.name + " — " + loc(f.category);
     var counts = [
       [num(f.posts), t("fan.posts")],
@@ -302,6 +310,59 @@
     }
     $("fanCounts").innerHTML = counts.map(function (c) { return "<li><strong>" + esc(c[0]) + "</strong> " + esc(c[1]) + "</li>"; }).join("") + delta;
     $("fanBio").innerHTML = (f.bio || []).map(function (l) { return "<p>" + bioHtml(l) + "</p>"; }).join("");
+  }
+
+  /* coin avatar: striped "11" flips over to the real profile picture once it has loaded */
+  var coinShown = null;
+  function renderAvatars(f) {
+    var coin = $("fanCoin"), back = $("fanCoinBack");
+    if (!coin || !f.avatar) return;
+    if (coinShown === f.avatar) return; // already loaded; keep state across language switches
+    var i = new Image();
+    i.alt = "@" + f.handle; i.referrerPolicy = "no-referrer"; i.decoding = "async";
+    i.onload = function () {
+      back.innerHTML = ""; back.appendChild(i); coinShown = f.avatar;
+      setTimeout(function () { coin.classList.add("flipped"); }, 700);
+    };
+    i.src = f.avatar;
+  }
+
+  /* hero photo card: the fan page's most-liked post of the last 7 days (else the latest with an image) */
+  function renderHeroCard() {
+    var card = $("heroCard");
+    if (!card) return;
+    var posts = fanPosts().filter(function (p) { return p.image; });
+    if (!posts.length) { card.hidden = true; return; }
+    var newest = posts.reduce(function (m, p) { return p.date > m ? p.date : m; }, "");
+    var weekAgo = new Date(new Date(newest) - 7 * 864e5).toISOString().slice(0, 10);
+    var week = posts.filter(function (p) { return p.date >= weekAgo && p.likes != null; });
+    var pick, label;
+    if (week.length) { pick = week.sort(function (a, b) { return b.likes - a.likes; })[0]; label = t("hero.cardLabel"); }
+    else { pick = posts.sort(function (a, b) { return a.date < b.date ? 1 : -1; })[0]; label = t("hero.cardLatest"); }
+    var img = new Image();
+    img.alt = (pick.caption || "").slice(0, 120); img.referrerPolicy = "no-referrer"; img.decoding = "async";
+    img.onload = function () { card.hidden = false; };
+    img.onerror = function () { card.hidden = true; };
+    $("heroCardImg").innerHTML = ""; $("heroCardImg").appendChild(img);
+    img.src = pick.image;
+    card.href = pick.url;
+    $("heroCardLabel").textContent = label;
+    $("heroCardLikes").textContent = pick.likes != null ? "♥ " + num(pick.likes) : "";
+  }
+
+  /* trending: likes gained since the previous update */
+  function trendInfo() {
+    var f = D.fanPage;
+    if (!f.prevFetchedAt) return null;
+    var prevDay = String(f.prevFetchedAt).slice(0, 10);
+    var list = fanPosts().filter(function (p) { return p.likes != null; }).map(function (p) {
+      var isNew = p.likesPrev == null && p.date >= prevDay;
+      var gain = p.likesPrev != null ? p.likes - p.likesPrev : (isNew ? p.likes : null);
+      return { post: p, gain: gain, isNew: isNew };
+    }).filter(function (x) { return x.gain != null; });
+    if (!list.length) return null;
+    list.sort(function (a, b) { return b.gain - a.gain; });
+    return list;
   }
 
   function renderFanKpis() {
@@ -340,13 +401,29 @@
       return;
     }
     document.querySelector(".feed-bar .tabs").hidden = false;
-    posts.sort(function (a, b) {
-      if (feedSort === "date") return a.date < b.date ? 1 : -1;
-      return (b[feedSort] || 0) - (a[feedSort] || 0);
-    });
+    var note = $("trendNote"), trendMap = null;
+    note.hidden = true;
+    if (feedSort === "trend") {
+      var tl = trendInfo();
+      note.hidden = false;
+      if (tl) {
+        trendMap = {};
+        tl.forEach(function (x, i) { trendMap[x.post.url] = { gain: x.gain, isNew: x.isNew, rank: i + 1 }; });
+        posts = tl.map(function (x) { return x.post; });
+        note.textContent = t("trend.note", { date: dateStr(D.fanPage.prevFetchedAt, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) });
+      } else {
+        note.textContent = t("trend.wait");
+        posts.sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+      }
+    } else {
+      posts.sort(function (a, b) {
+        if (feedSort === "date") return a.date < b.date ? 1 : -1;
+        return (b[feedSort] || 0) - (a[feedSort] || 0);
+      });
+    }
     var shown = posts.slice(0, feedShown), allImages = shown.every(function (p) { return p.image; });
     if (allImages) {
-      $("fanFeed").innerHTML = '<div class="grid-feed">' + shown.map(function (p, i) { return tileHtml(p, i === 0); }).join("") + "</div>";
+      $("fanFeed").innerHTML = '<div class="grid-feed">' + shown.map(function (p, i) { return tileHtml(p, i === 0, trendMap && trendMap[p.url]); }).join("") + "</div>";
     } else {
       $("fanFeed").innerHTML = '<div class="embed-feed">' + shown.map(function (p) { return p.image ? tileHtml(p) : embedHtml(p); }).join("") + "</div>";
       loadEmbed();
@@ -398,7 +475,7 @@
   }
 
   function renderFan() {
-    renderFanHead(); renderFanKpis(); renderFanFeed(); renderLikesChart();
+    renderFanHead(); renderFanKpis(); renderFanFeed(); renderLikesChart(); renderHeroCard();
     lineChart("fanFollowersChart", "fanFollowersTable", "fanFollowersNote", sortedHistory(D.fanPage));
   }
 
@@ -467,7 +544,7 @@
         var lb = svgEl("text", { class: "lbl", x: x + bw / 2, y: y - 6, "text-anchor": "middle" }); lb.textContent = v; svg.appendChild(lb);
         var hit = svgEl("rect", { x: x - 4, y: m.t, width: bw + 8, height: H - m.t - m.b, fill: "transparent" });
         hit.addEventListener("pointermove", function (ev) {
-          showTip("<b>" + esc(s.season) + "</b>" + (s.live ? " (" + esc(t("stats.inProgress")) + ")" : "") + "<br>" + esc(t("stats.goals")) + ": <b>" + s.goals + "</b><br>" + esc(t("stats.assists")) + ": <b>" + s.assists + "</b><br>" + esc(t("stats.apps")) + ": <b>" + s.apps + "</b>", ev.clientX, ev.clientY);
+          showTip("<b>" + esc(s.season) + "</b>" + (s.live ? " (" + esc(t("stats.inProgress")) + ")" : "") + "<br>" + esc(t("stats.goals")) + ": <b>" + s.goals + "</b><br>" + esc(t("stats.assists")) + ": <b>" + s.assists + "</b><br>" + esc(t("stats.apps")) + ": <b>" + (s.apps == null ? "—" : s.apps) + "</b>", ev.clientX, ev.clientY);
         });
         hit.addEventListener("pointerleave", hideTip);
         svg.appendChild(hit);
@@ -476,7 +553,7 @@
       if (s.live) { var t2 = svgEl("text", { x: cx, y: H - m.b + 32, "text-anchor": "middle" }); t2.textContent = t("stats.inProgress"); ax.appendChild(t2); }
     });
     $("seasonsTable").innerHTML = "<table><thead><tr><th>" + t("stats.season") + "</th><th>" + t("stats.apps") + "</th><th>" + t("stats.goals") + "</th><th>" + t("stats.assists") + "</th></tr></thead><tbody>" +
-      seasons.map(function (s) { return "<tr><td>" + esc(s.season) + "</td><td>" + s.apps + "</td><td>" + s.goals + "</td><td>" + s.assists + "</td></tr>"; }).join("") + "</tbody></table>";
+      seasons.map(function (s) { return "<tr><td>" + esc(s.season) + "</td><td>" + (s.apps == null ? "—" : s.apps) + "</td><td>" + s.goals + "</td><td>" + s.assists + "</td></tr>"; }).join("") + "</tbody></table>";
   }
 
   /* ---------- profile ---------- */
@@ -517,7 +594,8 @@
   function renderMiniStats() {
     var c = D.clubStats.currentSeason;
     $("miniStatsNote").textContent = c.label;
-    var items = [[t("stats.apps"), c.apps], [t("stats.goals"), c.goals], [t("stats.assists"), c.assists]];
+    var items = [[t("stats.apps"), c.apps], [t("stats.goals"), c.goals], [t("stats.assists"), c.assists]]
+      .filter(function (i) { return i[1] != null; });
     $("miniStats").innerHTML = items.map(function (i, k) { return '<div class="' + (k === 1 ? "hl" : "") + '"><dt>' + esc(i[0]) + "</dt><dd>" + i[1] + "</dd></div>"; }).join("");
   }
 

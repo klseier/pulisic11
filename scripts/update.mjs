@@ -16,7 +16,7 @@ try { live = JSON.parse(await readFile(OUT, "utf8")); } catch { /* first run */ 
 live.updated = today;
 
 async function getJSON(url, headers = {}) {
-  const r = await fetch(url, { headers });
+  const r = await fetch(url, { headers, signal: AbortSignal.timeout(30000) }); // 30 s per request
   if (!r.ok) throw new Error(`${r.status} ${r.statusText} for ${url.split("?")[0]}`);
   return r.json();
 }
@@ -68,12 +68,12 @@ if (FD) {
       live.clubStats = {
         currentSeason: {
           asOf: today,
-          apps: me.playedMatches ?? undefined,
+          // playedMatches in this feed counts the team's matches, not his appearances, so it is not used
           goals: me.goals ?? 0,
           assists: me.assists ?? 0,
         },
       };
-      console.log(`Pulisic: ${me.goals} goals, ${me.assists ?? 0} assists in ${me.playedMatches} matches`);
+      console.log(`Pulisic: ${me.goals} goals, ${me.assists ?? 0} assists`);
     } else {
       console.log("Pulisic not in the scorers list yet — stats left as is.");
     }
@@ -94,10 +94,24 @@ const PROFILES = [
 async function discover(handle, limit, withThumb) {
   const mediaFields = ["caption", "media_type", "media_url", "permalink", "timestamp", "like_count", "comments_count"]
     .concat(withThumb ? ["thumbnail_url"] : []).join(",");
-  const fields = `business_discovery.username(${handle}){name,biography,followers_count,follows_count,media_count,` +
+  const fields = `business_discovery.username(${handle}){name,biography,profile_picture_url,followers_count,follows_count,media_count,` +
     `media.limit(${limit}){${mediaFields}}}`;
   const url = `https://graph.facebook.com/v26.0/${IG_USER_ID}?fields=${encodeURIComponent(fields)}&access_token=${IG_ACCESS_TOKEN}`;
   return (await getJSON(url)).business_discovery;
+}
+
+/* Hourly like snapshots (data/snapshots.json, not loaded by the page).
+   "Trending" compares current likes with the snapshot taken about 24 hours ago. */
+const SNAP = new URL("../data/snapshots.json", import.meta.url);
+let snaps = {};
+try { snaps = JSON.parse(await readFile(SNAP, "utf8")); } catch { /* first run */ }
+const DAY = 24 * 3600e3;
+const shortcode = (url) => (url.match(/\/(?:p|reel|tv)\/([^/?#]+)/) || [])[1] || url;
+
+function dailyBaseline(list, now) {
+  // newest snapshot that is at least 24 h old; while the history is shorter than a day, the oldest one
+  const old = list.filter((x) => now - Date.parse(x.at) >= DAY);
+  return old.length ? old[old.length - 1] : list[0] || null;
 }
 
 let igFailed = false;
@@ -108,13 +122,19 @@ if (IG_USER_ID && IG_ACCESS_TOKEN) {
       try { bd = await discover(handle, limit, true); } catch { bd = await discover(handle, limit, false); }
       const media = bd.media?.data || [];
       const p = live[key] || {};
+      const now = Date.now();
+      const list = (snaps[key] || []).slice().sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+      const base = dailyBaseline(list, now);
       p.handle = handle;
       if (bd.name) p.name = bd.name;
+      if (bd.profile_picture_url) p.avatar = bd.profile_picture_url;
       if (bd.biography) p.bio = bd.biography.split("\n").filter(Boolean);
       p.followers = bd.followers_count;
       p.following = bd.follows_count;
       p.posts = bd.media_count;
       p.source = `Instagram Graph API, ${today}`;
+      p.prevFetchedAt = base ? base.at : null; // start of the trending window
+      p.fetchedAt = new Date(now).toISOString();
       p.history = (p.history || []).filter((h) => h.date !== today).concat({ date: today, followers: bd.followers_count });
       p.postsList = media.map((m) => ({
         url: m.permalink,
@@ -124,7 +144,14 @@ if (IG_USER_ID && IG_ACCESS_TOKEN) {
         caption: (m.caption || "").slice(0, 300),
         likes: m.like_count ?? null,
         comments: m.comments_count ?? null,
+        likesPrev: base ? (base.likes[shortcode(m.permalink)] ?? null) : null,
       }));
+      // store this run and drop snapshots that are no longer needed (keep the last ~day plus the baseline)
+      const likes = {};
+      media.forEach((m) => { if (typeof m.like_count === "number") likes[shortcode(m.permalink)] = m.like_count; });
+      list.push({ at: p.fetchedAt, likes });
+      const keepFrom = now - DAY - 2 * 3600e3;
+      snaps[key] = list.filter((x) => Date.parse(x.at) >= keepFrom || x === dailyBaseline(list, now));
       live[key] = p;
       console.log(`@${handle}: ${bd.followers_count} followers, ${media.length} posts read`);
     } catch (e) { console.warn(`@${handle} skipped:`, e.message); igFailed = true; }
@@ -135,6 +162,7 @@ if (IG_USER_ID && IG_ACCESS_TOKEN) {
 
 await mkdir(new URL("../data/", import.meta.url), { recursive: true });
 await writeFile(OUT, JSON.stringify(live, null, 2) + "\n");
+await writeFile(SNAP, JSON.stringify(snaps) + "\n");
 console.log("Wrote data/live.json");
 // Fail the run (GitHub then e-mails you) when Instagram could not be read, e.g. an expired token.
 if (igFailed) {

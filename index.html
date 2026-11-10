@@ -41,14 +41,20 @@
         <p class="hero-lede" data-i18n="hero.lede">A fan dashboard for Milan's number eleven: his Instagram, the next matches for club and country, where Milan stand, and what he has done on the pitch.</p>
         <dl class="hero-facts" id="heroFacts"></dl>
       </div>
-      <div class="hero-number" aria-hidden="true">11</div>
+      <div class="hero-art">
+        <a class="hero-card" id="heroCard" href="https://www.instagram.com/c.pulisic11/" target="_blank" rel="noopener" hidden>
+          <span class="hero-card-img" id="heroCardImg"></span>
+          <span class="hero-card-cap"><span id="heroCardLabel">Top post this week</span><b id="heroCardLikes"></b></span>
+        </a>
+        <div class="hero-number" aria-hidden="true">11</div>
+      </div>
     </section>
 
     <div class="layout">
     <!-- FAN PAGE: the main section -->
     <section class="col-main" id="fanpage" aria-labelledby="fanTitle">
       <div class="fan-head">
-        <a class="fan-avatar" id="fanAvatarLink" href="https://www.instagram.com/c.pulisic11/" target="_blank" rel="noopener" aria-label="@c.pulisic11"><span>11</span></a>
+        <a class="fan-avatar" id="fanAvatarLink" href="https://www.instagram.com/c.pulisic11/" target="_blank" rel="noopener" aria-label="@c.pulisic11"><span class="coin" id="fanCoin"><span class="face face-front"><span>11</span></span><span class="face face-back" id="fanCoinBack"></span></span></a>
         <div class="fan-id">
           <h2 id="fanTitle">@c.pulisic11</h2>
           <p class="fan-name" id="fanName"></p>
@@ -64,10 +70,12 @@
         <h3 data-i18n="fan.feed">Posts</h3>
         <div class="tabs" role="tablist" aria-label="Sort posts">
           <button role="tab" type="button" data-sort="date" aria-selected="true" data-i18n="fan.sortNew">Newest</button>
+          <button role="tab" type="button" data-sort="trend" aria-selected="false" data-i18n="fan.sortTrend">Trending</button>
           <button role="tab" type="button" data-sort="likes" aria-selected="false" data-i18n="fan.sortLikes">Most liked</button>
           <button role="tab" type="button" data-sort="comments" aria-selected="false" data-i18n="fan.sortComments">Most commented</button>
         </div>
       </div>
+      <p class="trend-note" id="trendNote" hidden></p>
       <div id="fanFeed"></div>
       <button type="button" class="btn ghost" id="feedMore" hidden data-i18n="fan.more">Show more posts</button>
 
