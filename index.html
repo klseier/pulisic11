@@ -24,6 +24,7 @@
       <a href="#matches" data-i18n="nav.matches">Matches</a>
       <a href="#tables" data-i18n="nav.tables">Tables</a>
       <a href="#stats" data-i18n="nav.stats">Club stats</a>
+      <a href="#goals" data-i18n="nav.goals">Goals</a>
       <a href="#profile" data-i18n="nav.profile">Profile</a>
     </nav>
     <div class="lang" role="group" aria-label="Language">
@@ -46,7 +47,15 @@
           <span class="hero-card-img" id="heroCardImg"></span>
           <span class="hero-card-cap"><span id="heroCardLabel">Top post this week</span><b id="heroCardLikes"></b></span>
         </a>
-        <div class="hero-number" aria-hidden="true">11</div>
+        <a class="hero-new" id="heroNew" href="https://www.instagram.com/c.pulisic11/" target="_blank" rel="noopener" hidden>
+          <span class="hn-img" id="heroNewImg"></span>
+          <span class="hn-text"><b id="heroNewLabel">New post</b><span id="heroNewAgo"></span></span>
+          <span class="hn-go" aria-hidden="true">→</span>
+        </a>
+        <div class="hero-num-col">
+          <div class="hero-number" aria-hidden="true">11</div>
+          <a class="hero-ach" id="heroAch" href="#goals" hidden></a>
+        </div>
       </div>
     </section>
 
@@ -126,6 +135,12 @@
         <a class="w-more" href="#tables" data-i18n="w.fullTable">Full table</a>
       </section>
 
+      <section class="widget w-goal" id="wGoal" aria-labelledby="wGoalTitle" hidden>
+        <h2 id="wGoalTitle" class="w-title" data-i18n="w.lastGoal">Latest goal</h2>
+        <div id="lastGoal"></div>
+        <a class="w-more" href="#goals" data-i18n="w.allGoals">All goals for Milan</a>
+      </section>
+
       <section class="widget" id="wStats" aria-labelledby="wStatsTitle">
         <h2 id="wStatsTitle" class="w-title" data-i18n="w.season">Pulisic this season</h2>
         <p class="w-sub" id="miniStatsNote"></p>
@@ -183,6 +198,21 @@
         </figure>
       </div>
       <p class="totals" id="milanTotals"></p>
+    </section>
+
+    <!-- GOALS FOR MILAN -->
+    <section class="block" id="goals" aria-labelledby="goalsTitle">
+      <div class="block-head">
+        <h2 id="goalsTitle" data-i18n="goals.title">Goals for Milan</h2>
+        <p class="block-sub" id="goalsSub"></p>
+      </div>
+      <p class="goals-summary" id="goalsSummary"></p>
+      <div class="goal-filters">
+        <div class="tabs" role="tablist" aria-label="Season" id="goalSeasons"></div>
+        <div class="tabs" role="tablist" aria-label="Competition" id="goalComps"></div>
+      </div>
+      <ol class="goal-list" id="goalList"></ol>
+      <button type="button" class="btn ghost" id="goalsMore" hidden data-i18n="goals.more">Show all goals</button>
     </section>
 
     <!-- PROFILE -->
