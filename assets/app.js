@@ -56,12 +56,14 @@
     if (live.standings) Object.keys(live.standings).forEach(function (k) { D.standings[k] = live.standings[k]; });
     if (live.clubStats && live.clubStats.currentSeason) {
       var cur = D.clubStats.currentSeason, L2 = live.clubStats.currentSeason;
-      ["asOf", "apps", "goals", "assists"].forEach(function (k) { if (L2[k] != null) cur[k] = L2[k]; });
-      // appearances, starts and shots are not in the automatic feed: hide them instead of showing stale numbers
+      ["asOf", "apps", "starts", "goals", "assists", "shots", "shotsOnTarget"].forEach(function (k) { if (L2[k] != null) cur[k] = L2[k]; });
+      // fields the feed does not provide are hidden instead of showing stale numbers
       if (L2.apps == null) cur.apps = null;
-      cur.starts = null; cur.shots = null;
+      if (L2.starts == null) cur.starts = null;
+      if (L2.shots == null) cur.shots = null;
       D.clubStats.seasons.forEach(function (x) { if (x.live) { x.apps = cur.apps; x.goals = cur.goals; x.assists = cur.assists; } });
     }
+    if (live.clubStats && live.clubStats.milanTotals) D.clubStats.milanTotals = live.clubStats.milanTotals;
     if (live.updated && live.updated > D.updated) D.updated = live.updated;
   }
 
