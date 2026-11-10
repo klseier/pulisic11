@@ -235,23 +235,48 @@ if (!live.wiki?.at || manual || Date.now() - Date.parse(live.wiki.at) > WIKI_EVE
 
   // 2) Pulisic's senior USA caps and goals from his infobox
   try {
-    const wt = (await wiki("Christian Pulisic")).wikitext;
+    const pg = await wiki("Christian Pulisic");
+    const wt = pg.wikitext || "", html = pg.text || "";
     const param = (name) => { const m = wt.match(new RegExp("\\|\\s*" + name + "\\s*=\\s*([^\\n]*)")); return m ? m[1].split(/\n\s*\|/)[0].trim() : null; };
-    let found = null;
+    const youth = /under|U-?\s?\d{2}\b|olympic/i;
+    let caps = NaN, goals = NaN, asOf = today;
+
+    // a) infobox parameters in the wikitext (nationalteamN / nationalcapsN / nationalgoalsN)
     for (let i = 1; i <= 12; i++) {
       const team = param("nationalteam" + i);
-      if (!team) continue;
-      if (/United States/i.test(team) && !/under|U-?\d{2}|olympic/i.test(team)) found = i;
+      if (team && /United States/i.test(team) && !youth.test(team)) {
+        caps = parseInt(param("nationalcaps" + i), 10); goals = parseInt(param("nationalgoals" + i), 10);
+      }
     }
-    if (found) {
-      const caps = parseInt(param("nationalcaps" + found), 10), goals = parseInt(param("nationalgoals" + found), 10);
+    // b) fallback: the rendered infobox, row "United States  90 (33)" (senior team is the last such row)
+    if (isNaN(caps)) {
+      const box = (html.match(/<table[^>]*infobox[\s\S]*?<\/table>/i) || [""])[0];
+      const rows = (box.match(/<tr[\s\S]*?<\/tr>/gi) || []).map((r) => strip(r.replace(/<\/t[hd]>/gi, " ")));
+      const hits = rows.filter((r) => /United States/i.test(r) && !youth.test(r) && /\d+\s*\(\s*\d+\s*\)/.test(r));
+      if (hits.length) {
+        const m = hits[hits.length - 1].match(/(\d+)\s*\(\s*(\d+)\s*\)\s*$/) || hits[hits.length - 1].match(/(\d+)\s*\(\s*(\d+)\s*\)/);
+        caps = parseInt(m[1], 10); goals = parseInt(m[2], 10);
+      }
+      const upd = rows.find((r) => /National team caps and goals correct as of/i.test(r)) ||
+                  (strip(html).match(/National team caps and goals correct as of ([^.]+?\d{4})/i) || [])[0];
+      const dm = upd && upd.match(/(\d{1,2} [A-Z][a-z]+ \d{4})/);
+      if (dm) { const d = Date.parse(dm[1] + " UTC"); if (!isNaN(d)) asOf = new Date(d).toISOString().slice(0, 10); }
+    } else {
       const upd = (param("nationalteam-update") || "").replace(/\{\{[^|}]*\|/, "").replace(/[{}]/g, "").replace(/\|/g, " ").trim();
       const d = Date.parse(upd + " UTC");
-      if (!isNaN(caps) && !isNaN(goals)) {
-        W.usa = { caps, goals, asOf: isNaN(d) ? today : new Date(d).toISOString().slice(0, 10) };
-        console.log(`USA (Wikipedia): ${caps} caps, ${goals} goals, as of ${W.usa.asOf}`);
-      }
-    } else console.warn("USA caps (Wikipedia): senior team row not found — previous values kept.");
+      if (!isNaN(d)) asOf = new Date(d).toISOString().slice(0, 10);
+    }
+
+    if (!isNaN(caps) && !isNaN(goals) && caps > 0) {
+      W.usa = { caps, goals, asOf };
+      console.log(`USA (Wikipedia): ${caps} caps, ${goals} goals, as of ${asOf}`);
+    } else {
+      console.warn("USA caps (Wikipedia): senior team row not found — previous values kept. Debug lines below:");
+      wt.split("\n").filter((l) => /national|caps|United States/i.test(l)).slice(0, 15).forEach((l) => console.warn("  wt> " + l.slice(0, 160)));
+      const box = (html.match(/<table[^>]*infobox[\s\S]*?<\/table>/i) || [""])[0];
+      (box.match(/<tr[\s\S]*?<\/tr>/gi) || []).map(strip).filter((r) => /United States|International/i.test(r)).slice(0, 10)
+        .forEach((r) => console.warn("  box> " + r.slice(0, 160)));
+    }
   } catch (e) { console.warn("USA caps (Wikipedia) skipped:", e.message); }
 
   W.at = new Date().toISOString();
