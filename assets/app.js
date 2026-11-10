@@ -74,13 +74,16 @@
     if (live.intl && live.intl.caps) { D.player.caps = live.intl.caps; D.player.intlGoals = live.intl.goals; D.player.intlAsOf = live.intl.asOf; }
     if (live.pulisicLog) D.pulisicLog = live.pulisicLog;
     if (live.goals && live.goals.list && live.goals.list.length) {
-      // Wikipedia's match boxes are often incomplete: merge with the hand-made list, one entry per match day
-      var byDay = {};
-      (D.goals && D.goals.list || []).concat(live.goals.list).forEach(function (g) {
+      // the hand-checked archive in data.js is authoritative; the feed only adds matches played after it
+      // (and fills in a minute when the archive has none for that match)
+      var base = (D.goals && D.goals.list) || [], cut = (D.goals && D.goals.asOf) || "", byDay = {};
+      base.forEach(function (g) { byDay[g.date] = g; });
+      live.goals.list.forEach(function (g) {
         var cur = byDay[g.date];
-        if (!cur || (g.minutes || []).length > (cur.minutes || []).length) byDay[g.date] = g;
+        if (cur) { if (!(cur.minutes || []).length && (g.minutes || []).length) byDay[g.date] = Object.assign({}, cur, { minutes: g.minutes }); return; }
+        if (g.date > cut) byDay[g.date] = g;
       });
-      D.goals = { list: Object.keys(byDay).map(function (k) { return byDay[k]; }), asOf: live.goals.asOf };
+      D.goals = { list: Object.keys(byDay).map(function (k) { return byDay[k]; }), asOf: live.goals.asOf || (D.goals && D.goals.asOf) };
     }
     if (live.updated && live.updated > D.updated) D.updated = live.updated;
   }
@@ -148,8 +151,12 @@
   }
 
   var filter = "all";
+  var fixturesOpen = false;
   function renderFixtures() {
-    var list = upcoming().filter(function (f) { return filter === "all" || f.team === filter; });
+    var all = upcoming().filter(function (f) { return filter === "all" || f.team === filter; });
+    var list = fixturesOpen ? all : all.slice(0, 5);
+    var more = $("fixturesMore");
+    if (more) { more.hidden = all.length <= 5; more.textContent = fixturesOpen ? t("common.showLess") : t("common.showAll", { n: all.length }); }
     $("fixtures").innerHTML = list.length ? list.map(function (f) {
       return '<li class="fixture">' +
         '<div class="fx-date">' + esc(dateStr(f.date, { weekday: "short", day: "numeric", month: "short" })) +
@@ -566,6 +573,13 @@
   /* ---------- ATHLETE widget ---------- */
   function renderAthlete() {
     var a = D.athlete, h = a.handle, posts = (a.postsList || []).slice().sort(function (x, y) { return x.date < y.date ? 1 : -1; }).slice(0, 6);
+    var av = $("athAvatar");
+    if (av && a.avatar) {
+      var im = new Image(); im.alt = ""; im.referrerPolicy = "no-referrer"; im.decoding = "async";
+      im.onload = function () { av.hidden = false; };
+      im.onerror = function () { av.hidden = true; };
+      av.innerHTML = ""; av.appendChild(im); im.src = a.avatar; av.href = profileUrl(h);
+    }
     $("athSub").innerHTML = esc(t(posts.length ? "ath.sub" : "ath.subNoPosts", { h: h })) + ' <a href="' + profileUrl(h) + '" target="_blank" rel="noopener">instagram.com/' + esc(h) + "</a>";
     var hist = sortedHistory(a), delta = "";
     if (hist.length > 1) {
@@ -684,10 +698,10 @@
   }
 
   /* ---------- goals for Milan ---------- */
-  var goalSeason = "all", goalComp = "all", goalsShown = 15;
+  var goalSeason = "all", goalComp = "all", goalsShown = 5;
   function compGroup(c) { return /serie a/i.test(c) ? "sa" : /league/i.test(c) ? "eu" : "cup"; }
   var GROUP_LABEL = { sa: "Serie A", eu: "UEFA", cup: "Coppa Italia / Supercoppa" };
-  function goalCount(g) { return Math.max(1, g.minutes.length); }
+  function goalCount(g) { return Math.max(g.count || 1, (g.minutes || []).length); }
   function isMilan(n) { return /milan/i.test(n) && !/inter/i.test(n); }
 
   function renderGoals() {
@@ -723,13 +737,14 @@
     $("goalList").innerHTML = shown.length ? shown.slice(0, goalsShown).map(function (g) {
       var n = goalCount(g), tag = n === 2 ? t("goals.brace") : n >= 3 ? t("goals.hat") : "";
       var team = function (x) { return isMilan(x) ? '<span class="us">' + esc(x) + "</span>" : esc(x); };
-      var mins = g.minutes.length ? g.minutes.map(function (m) { return '<span class="gmin">' + esc(m.replace("(pen.)", "(" + t("goals.pen") + ")")) + "</span>"; }).join("") : '<span class="gmin muted">⚽</span>';
+      var mins = g.minutes.length ? g.minutes.map(function (m) { return '<span class="gmin">' + esc(m.replace("(pen.)", "(" + t("goals.pen") + ")")) + "</span>"; }).join("") : '<span class="gmin muted">' + new Array(goalCount(g) + 1).join("⚽") + '</span>';
       return '<li class="goal"><span class="g-date">' + esc(dateStr(g.date, { day: "numeric", month: "short" })) + "<small>" + esc(String(g.date).slice(0, 4)) + "</small></span>" +
         '<span class="g-match">' + team(g.home) + " – " + team(g.away) + (g.score ? ' <b class="g-score">' + esc(g.score) + "</b>" : "") +
         '<span class="g-comp"><i class="gdot ' + compGroup(g.comp) + '"></i>' + esc(g.comp) + (tag ? " · " + esc(tag) : "") + (G.partial ? "" : " · " + esc(t("goals.nth", { n: nth[g.date + g.minutes.join()] }))) + "</span></span>" +
         '<span class="g-mins">' + mins + "</span></li>";
     }).join("") : '<li class="empty">' + esc(t("goals.empty")) + "</li>";
-    $("goalsMore").hidden = shown.length <= goalsShown;
+    $("goalsMore").hidden = shown.length <= 5;
+    $("goalsMore").textContent = goalsShown >= shown.length ? t("common.showLess") : t("common.showAll", { n: shown.length });
 
     var last = list[0], w = $("wGoal");
     if (!last) { w.hidden = true; return; }
@@ -787,9 +802,16 @@
     var b = e.target.closest("[data-gseason],[data-gcomp]");
     if (!b) return;
     if (b.dataset.gseason) goalSeason = b.dataset.gseason; else goalComp = b.dataset.gcomp;
-    goalsShown = 15; renderGoals();
+    goalsShown = 5; renderGoals();
   });
-  $("goalsMore").addEventListener("click", function () { goalsShown = 1000; renderGoals(); });
+  $("goalsMore").addEventListener("click", function () {
+    var open = goalsShown < 1000; goalsShown = open ? 1000 : 5; renderGoals();
+    if (!open) $("goals").scrollIntoView({ block: "start" });
+  });
+  if ($("fixturesMore")) $("fixturesMore").addEventListener("click", function () {
+    fixturesOpen = !fixturesOpen; renderFixtures();
+    if (!fixturesOpen) $("matches").scrollIntoView({ block: "start" });
+  });
 
   renderAll();
 

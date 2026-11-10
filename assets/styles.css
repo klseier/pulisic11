@@ -563,3 +563,18 @@ td.pts { font-weight: 700; }
 @media (max-width: 900px) { .hero-num-col .hero-ach { order: 2; } .hero-num-col { gap: .6rem; } }
 .hn-text { flex: 1; }
 .chart-note:empty { display: none; }
+
+/* ---------- Athlete avatar in the widget corner ---------- */
+.w-athlete { position: relative; }
+.w-athlete:has(.ath-avatar:not([hidden])) .w-title,
+.w-athlete:has(.ath-avatar:not([hidden])) .w-sub { padding-right: 5.25rem; }
+.ath-avatar {
+  position: absolute; top: 1.4rem; right: 1.4rem; width: 4.25rem; height: 4.25rem; border-radius: 50%; overflow: hidden; display: block;
+  background: var(--paper-2); box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--rosso), 0 0 0 9px var(--nero);
+  transition: transform .2s;
+}
+.ath-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ath-avatar:hover, .ath-avatar:focus-visible { transform: scale(1.05); }
+
+/* ---------- "Show all" buttons under shortened lists ---------- */
+#fixturesMore, #goalsMore { margin-top: 1rem; }
