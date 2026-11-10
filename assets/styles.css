@@ -478,3 +478,7 @@ td.pts { font-weight: 700; }
 @media (max-width: 900px) {
   .hero-card-cap { flex-direction: column; align-items: flex-start; gap: .15rem; font-size: .72rem; }
 }
+.live-now { display: inline-flex; align-items: center; gap: .5rem; font: 800 2rem/1 var(--display); text-transform: uppercase; color: #fff; }
+.live-now::before { content: ""; width: .6rem; height: .6rem; border-radius: 50%; background: var(--rosso); animation: livepulse 1.4s ease-in-out infinite; }
+@keyframes livepulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .live-now::before { animation: none; } }

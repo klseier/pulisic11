@@ -52,7 +52,14 @@
       live.fixtures.forEach(function (f) { seen[key(f)] = true; });
       D.fixtures = D.fixtures.filter(function (f) { return !seen[key(f)]; }).concat(live.fixtures);
     }
-    if (live.recentResults && live.recentResults.length) D.recentResults = live.recentResults;
+    if (live.recentResults && live.recentResults.length) {
+      // keep hand-written Pulisic notes (assets/data.js) for matches the feed has no note for
+      var notes = {};
+      D.recentResults.forEach(function (r) { if (r.pulisic) notes[r.date] = r.pulisic; });
+      D.recentResults = live.recentResults.map(function (r) {
+        return r.pulisic || !notes[r.date] ? r : Object.assign({}, r, { pulisic: notes[r.date] });
+      });
+    }
     if (live.standings) Object.keys(live.standings).forEach(function (k) { D.standings[k] = live.standings[k]; });
     if (live.clubStats && live.clubStats.currentSeason) {
       var cur = D.clubStats.currentSeason, L2 = live.clubStats.currentSeason;
@@ -120,6 +127,8 @@
       (f.timeTbc ? " (" + esc(t("matches.tbc")) + ")" : "") + (f.venue ? "<br>" + esc(f.venue) : "") + "</p>";
     function tick() {
       var ms = Math.max(0, new Date(f.date) - Date.now());
+      if (Date.now() - new Date(f.date) > 2 * 3600e3) { renderNext(); renderFixtures(); renderMiniFixtures(); return; }
+      if (ms === 0) { var el0 = $("countdown"); if (el0) el0.innerHTML = '<span class="live-now">' + esc(t("next.live")) + "</span>"; return; }
       var d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5), m = Math.floor(ms % 36e5 / 6e4);
       var el = $("countdown");
       if (el) el.innerHTML = d + "<small>" + t("next.days") + "</small> " + h + "<small>" + t("next.hours") + "</small> " + m + "<small>" + t("next.min") + "</small>";
