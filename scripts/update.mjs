@@ -279,6 +279,57 @@ if (!live.wiki?.at || manual || Date.now() - Date.parse(live.wiki.at) > WIKI_EVE
     }
   } catch (e) { console.warn("USA caps (Wikipedia) skipped:", e.message); }
 
+  // 3) Pulisic's goals for Milan from the "<season> AC Milan season" articles (match boxes list scorers + minutes)
+  try {
+    const y0 = 2023;
+    const yNow = (() => { const d = new Date(); return d.getUTCMonth() >= 6 ? d.getUTCFullYear() : d.getUTCFullYear() - 1; })();
+    const MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December";
+    const compOf = (h) => /supercoppa|super cup/i.test(h) ? "Supercoppa Italiana" : /coppa italia/i.test(h) ? "Coppa Italia"
+      : /champions league/i.test(h) ? "Champions League" : /europa league/i.test(h) ? "Europa League"
+      : /conference league/i.test(h) ? "Conference League" : /serie a/i.test(h) ? "Serie A"
+      : /friendl|pre-season|preseason|club friendl|trofeo/i.test(h) ? "friendly" : null;
+    const all = [];
+    for (let y = y0; y <= yNow; y++) {
+      const title = `${y}–${String((y + 1) % 100).padStart(2, "0")} AC Milan season`;
+      let html;
+      try { html = (await wiki(title)).text; } catch (e) { console.warn("Goals (Wikipedia):", e.message); continue; }
+      // walk headings and match boxes in page order; the nearest heading tells the competition
+      const re = /<h[2-5][^>]*>([\s\S]*?)<\/h[2-5]>|<div[^>]*class="[^"]*footballbox[^"]*"[\s\S]*?<div[^>]*class="[^"]*fright[^"]*"|<table[^>]*class="[^"]*vevent[^"]*"[\s\S]*?<\/table>/gi;
+      let m, comp = null, found = 0, boxes = 0, firstBox = "";
+      while ((m = re.exec(html))) {
+        if (m[1] !== undefined) { const c = compOf(strip(m[1])); if (c) comp = c; continue; }
+        boxes++;
+        const block = m[0];
+        const text = strip(block.replace(/<\/(td|th|li|div|tr)>|<br\s*\/?>/gi, " | "));
+        if (!firstBox) firstBox = text.slice(0, 220);
+        const roundComp = compOf((block.match(/class="[^"]*frnd[^"]*"[^>]*>([\s\S]*?)<\/div>/i) || [])[1] || "");
+        const c = roundComp || comp;
+        if (c === "friendly") continue;
+        const pm = text.match(/Pulisic\s*((?:\d{1,3}(?:\+\d{1,2})?\s*['′’]\s*(?:\((?:pen|p)\.?\)\s*)?,?\s*)+)/i);
+        if (!pm) continue;
+        const minutes = [...pm[1].matchAll(/(\d{1,3}(?:\+\d{1,2})?)\s*['′’]\s*(\((?:pen|p)\.?\))?/gi)].map((x) => x[1] + "'" + (x[2] ? " (pen.)" : ""));
+        const iso = (block.match(/datetime="(\d{4}-\d{2}-\d{2})/) || [])[1];
+        const dm = text.match(new RegExp("(\\d{1,2}) (" + MONTHS + ") (\\d{4})"));
+        const date = iso || (dm ? new Date(Date.parse(`${dm[1]} ${dm[2]} ${dm[3]} UTC`)).toISOString().slice(0, 10) : null);
+        const teams = [...block.matchAll(/class="[^"]*(?:fhome|faway|fn org)[^"]*"[^>]*>([\s\S]*?)<\/(?:th|span|td)>/gi)].map((x) => strip(x[1])).filter(Boolean);
+        const score = (text.match(/\b(\d{1,2})\s*[–-]\s*(\d{1,2})\b/) || [])[0];
+        if (!date || !minutes.length) continue;
+        all.push({ date, comp: c || "Other", home: (teams[0] || "").replace(/^Milan$/, "AC Milan"), away: (teams[1] || "").replace(/^Milan$/, "AC Milan"),
+          score: score ? score.replace(/\s*[–-]\s*/, "–") : "", minutes, season: `${y}/${String((y + 1) % 100).padStart(2, "0")}` });
+        found++;
+      }
+      console.log(`Goals (Wikipedia) ${title}: ${boxes} match boxes, ${found} with Pulisic goals`);
+      if (!boxes) console.warn("  debug: no match boxes recognised on this page");
+      else if (!found && y === yNow) console.warn("  debug first box> " + firstBox);
+    }
+    const seen = new Set();
+    const goals = all.filter((g) => { const k = g.date + g.minutes.join(); if (seen.has(k)) return false; seen.add(k); return true; })
+      .sort((a, b) => (a.date < b.date ? 1 : -1));
+    const total = goals.reduce((n, g) => n + g.minutes.length, 0);
+    if (total) { W.goals = { list: goals, total, asOf: today }; console.log(`Goals (Wikipedia): ${total} goals in ${goals.length} matches`); }
+    else console.warn("Goals (Wikipedia): none found — previous list kept.");
+  } catch (e) { console.warn("Goals (Wikipedia) skipped:", e.message); }
+
   W.at = new Date().toISOString();
   live.wiki = W;
 } else {
@@ -326,6 +377,7 @@ if (!live.wiki?.at || manual || Date.now() - Date.parse(live.wiki.at) > WIKI_EVE
   const elTable = A.europaLeague || live.wiki?.europaLeague;
   if (elTable) { live.standings = live.standings || {}; live.standings.europaLeague = elTable; }
   if (live.wiki?.usa) live.intl = live.wiki.usa;
+  if (live.wiki?.goals) live.goals = live.wiki.goals;
 
   const cs = A.serieA ? { ...A.serieA } : {};
   if (F.stats) {
@@ -397,6 +449,7 @@ if (IG_USER_ID && IG_ACCESS_TOKEN) {
       p.postsList = media.map((m) => ({
         url: m.permalink,
         date: m.timestamp.slice(0, 10),
+        ts: m.timestamp,
         type: m.media_type,
         image: m.media_type === "VIDEO" ? (m.thumbnail_url || null) : (m.media_url || null),
         caption: (m.caption || "").slice(0, 300),
