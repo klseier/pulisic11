@@ -295,9 +295,33 @@ if (!live.wiki?.at || manual || Date.now() - Date.parse(live.wiki.at) > WIKI_EVE
   (A.usaFixtures || []).forEach(add);
   if (byDay.size) live.fixtures = [...byDay.values()].sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
 
+  // Pulisic's goals/assists per match: when the hourly Serie A totals go up, credit the latest finished match
+  live.pulisicLog = live.pulisicLog || {};
+  if (F.stats) {
+    const prev = live.pulisicPrev;
+    if (prev) {
+      const dg = F.stats.goals - prev.goals, da = F.stats.assists - prev.assists;
+      const lastMatch = (F.results || []).filter((r) => r.date <= today && /serie a/i.test(r.comp)).sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+      if ((dg > 0 || da > 0) && lastMatch) {
+        const e = live.pulisicLog[lastMatch.date] || { g: 0, a: 0 };
+        e.g += Math.max(0, dg); e.a += Math.max(0, da);
+        live.pulisicLog[lastMatch.date] = e;
+        console.log(`Pulisic +${Math.max(0, dg)} G, +${Math.max(0, da)} A credited to ${lastMatch.home}–${lastMatch.away} (${lastMatch.date})`);
+      }
+    }
+    live.pulisicPrev = { goals: F.stats.goals, assists: F.stats.assists };
+  }
+  const note = (e) => {
+    const en = [], it = [];
+    if (e.g) { en.push(e.g === 1 ? "Goal" : `${e.g} goals`); it.push(e.g === 1 ? "Gol" : `${e.g} gol`); }
+    if (e.a) { en.push(e.a === 1 ? "Assist" : `${e.a} assists`); it.push(e.a === 1 ? "Assist" : `${e.a} assist`); }
+    return en.length ? { en: en.join(" + "), it: it.join(" + ") } : undefined;
+  };
+
   const res = new Map();
   [...(F.results || []), ...(A.milanResults || [])].forEach((r) => { if (!res.has(r.date)) res.set(r.date, r); });
-  if (res.size) live.recentResults = [...res.values()].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 5);
+  if (res.size) live.recentResults = [...res.values()].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 5)
+    .map((r) => (live.pulisicLog[r.date] ? { ...r, pulisic: note(live.pulisicLog[r.date]) } : r));
 
   const elTable = A.europaLeague || live.wiki?.europaLeague;
   if (elTable) { live.standings = live.standings || {}; live.standings.europaLeague = elTable; }
