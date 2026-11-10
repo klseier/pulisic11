@@ -73,7 +73,15 @@
     if (live.clubStats && live.clubStats.milanTotals) D.clubStats.milanTotals = live.clubStats.milanTotals;
     if (live.intl && live.intl.caps) { D.player.caps = live.intl.caps; D.player.intlGoals = live.intl.goals; D.player.intlAsOf = live.intl.asOf; }
     if (live.pulisicLog) D.pulisicLog = live.pulisicLog;
-    if (live.goals && live.goals.list && live.goals.list.length) D.goals = { list: live.goals.list, asOf: live.goals.asOf, partial: false };
+    if (live.goals && live.goals.list && live.goals.list.length) {
+      // Wikipedia's match boxes are often incomplete: merge with the hand-made list, one entry per match day
+      var byDay = {};
+      (D.goals && D.goals.list || []).concat(live.goals.list).forEach(function (g) {
+        var cur = byDay[g.date];
+        if (!cur || (g.minutes || []).length > (cur.minutes || []).length) byDay[g.date] = g;
+      });
+      D.goals = { list: Object.keys(byDay).map(function (k) { return byDay[k]; }), asOf: live.goals.asOf };
+    }
     if (live.updated && live.updated > D.updated) D.updated = live.updated;
   }
 
@@ -392,6 +400,11 @@
   }
 
   /* achievements badge: goals and assists for Milan, with the next round milestone */
+  function milanKnownGoals() {
+    var tot = D.clubStats.milanTotals || {}, g = tot.goals || 0, log = D.pulisicLog || {};
+    Object.keys(log).forEach(function (d) { if (!tot.asOf || d > tot.asOf) g += log[d].g || 0; });
+    return g;
+  }
   function milanCareer() {
     var tot = D.clubStats.milanTotals || {}, g = tot.goals || 0, a = tot.assists || 0;
     var log = D.pulisicLog || {};
@@ -683,7 +696,10 @@
     var list = G.list.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; });
     var total = list.reduce(function (n, g) { return n + goalCount(g); }, 0);
 
-    $("goalsSub").textContent = G.partial ? t("goals.subPartial") : t("goals.sub", { date: dateStr(G.asOf) });
+    // the list counts as complete only when it adds up to his known total for Milan
+    var known = milanKnownGoals();
+    G.partial = total < known;
+    $("goalsSub").textContent = G.partial ? t("goals.subPartial", { n: total, total: known }) : t("goals.sub");
     var by = { sa: 0, eu: 0, cup: 0 };
     list.forEach(function (g) { by[compGroup(g.comp)] += goalCount(g); });
     $("goalsSummary").innerHTML = "<strong>" + esc(t("goals.summary", { n: total, m: list.length })) + "</strong>" +
