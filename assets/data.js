@@ -137,7 +137,7 @@ window.SITE_DATA = {
       asOf: "2026-11-08",
       apps: 8, starts: 6, goals: 4, assists: 1, shots: 11, shotsOnTarget: 7, yellow: 2,
     },
-    milanTotals: { apps: 144, goals: 46, assists: 28, asOf: "2026-11-10" }, // club figure 141/44/28 on 30 Oct + Inter (goal), Ferencváros (sub), Genoa (goal)
+    milanTotals: { apps: 145, goals: 46, assists: 25, asOf: "2026-11-10" }, // Flashscore, 10 Nov 2026: 145 apps, 46 G, 25 A (matches the fan page bio)
     seasons: [
       { season: "2023/24", apps: 36, goals: 12, assists: 8 },
       { season: "2024/25", apps: 34, goals: 11, assists: 9 },
