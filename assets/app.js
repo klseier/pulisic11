@@ -704,6 +704,9 @@
   function goalCount(g) { return Math.max(g.count || 1, (g.minutes || []).length); }
   function isMilan(n) { return /milan/i.test(n) && !/inter/i.test(n); }
 
+  function nthLabel(end, count) {
+    return count > 1 ? t("goals.nthMany", { a: end - count + 1, b: end }) : t("goals.nth", { n: end });
+  }
   function renderGoals() {
     var G = D.goals;
     if (!G || !G.list) return;
@@ -740,7 +743,7 @@
       var mins = g.minutes.length ? g.minutes.map(function (m) { return '<span class="gmin">' + esc(m.replace("(pen.)", "(" + t("goals.pen") + ")")) + "</span>"; }).join("") : '<span class="gmin muted">' + new Array(goalCount(g) + 1).join("⚽") + '</span>';
       return '<li class="goal"><span class="g-date">' + esc(dateStr(g.date, { day: "numeric", month: "short" })) + "<small>" + esc(String(g.date).slice(0, 4)) + "</small></span>" +
         '<span class="g-match">' + team(g.home) + " – " + team(g.away) + (g.score ? ' <b class="g-score">' + esc(g.score) + "</b>" : "") +
-        '<span class="g-comp"><i class="gdot ' + compGroup(g.comp) + '"></i>' + esc(g.comp) + (tag ? " · " + esc(tag) : "") + (G.partial ? "" : " · " + esc(t("goals.nth", { n: nth[g.date + g.minutes.join()] }))) + "</span></span>" +
+        '<span class="g-comp"><i class="gdot ' + compGroup(g.comp) + '"></i>' + esc(g.comp) + (tag ? " · " + esc(tag) : "") + (G.partial ? "" : " · " + esc(nthLabel(nth[g.date + g.minutes.join()], n))) + "</span></span>" +
         '<span class="g-mins">' + mins + "</span></li>";
     }).join("") : '<li class="empty">' + esc(t("goals.empty")) + "</li>";
     $("goalsMore").hidden = shown.length <= 5;
@@ -752,7 +755,7 @@
     var opp = isMilan(last.home) ? last.away : last.home;
     $("lastGoal").innerHTML = '<p class="lg-opp">⚽ ' + esc(opp) + (last.minutes.length ? ' <span class="lg-min">' + esc(last.minutes.join(", ")) + "</span>" : "") + "</p>" +
       '<p class="w-sub">' + esc(last.home + " – " + last.away + (last.score ? " " + last.score : "")) + "<br>" + esc(last.comp) + ", " + esc(dateStr(last.date)) + "</p>" +
-      (G.partial ? "" : '<p class="lg-nth">' + esc(t("goals.nth", { n: total })) + "</p>");
+      (G.partial ? "" : '<p class="lg-nth">' + esc(nthLabel(total, goalCount(last))) + "</p>");
   }
 
   function renderAll() {

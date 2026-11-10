@@ -578,3 +578,14 @@ td.pts { font-weight: 700; }
 
 /* ---------- "Show all" buttons under shortened lists ---------- */
 #fixturesMore, #goalsMore { margin-top: 1rem; }
+
+/* ---------- Hero: nickname in the space after the surname ---------- */
+.hero-name { display: inline-block; }
+.hn-last { display: flex; align-items: center; width: 100%; white-space: nowrap; }
+.hero-nick {
+  flex: 1; display: flex; align-items: center; justify-content: center; margin-left: .9em; transform: translateY(-.15em);
+  font: 800 max(.15em, 11px)/1.15 var(--text); letter-spacing: .14em; text-transform: uppercase; color: var(--rosso);
+  white-space: normal; text-align: center; max-width: 6.5em;
+}
+.hero-nick::before, .hero-nick::after { content: "★"; font-size: .7em; color: var(--nero); margin: 0 .6em; }
+@media (max-width: 560px) { .hero-nick { letter-spacing: .08em; } .hero-nick::before, .hero-nick::after { margin: 0 .35em; } }
