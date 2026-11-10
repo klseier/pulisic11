@@ -64,7 +64,7 @@ if (FD) {
     const done = await getJSON(`${base}/teams/${MILAN_ID}/matches?status=FINISHED&limit=40`, h);
     live.fd.results = done.matches.slice(-5).reverse().map((m) => ({
       comp: m.competition?.name || "", home: name(m.homeTeam), away: name(m.awayTeam),
-      score: `${m.score.fullTime.home}–${m.score.fullTime.away}`, date: m.utcDate.slice(0, 10),
+      score: `${m.score.fullTime.home}–${m.score.fullTime.away}`, date: m.utcDate.slice(0, 10), id: m.id,
     }));
     console.log(`Milan Serie A fixtures: ${live.fd.fixtures.length}, results: ${live.fd.results.length}`);
   } catch (e) { console.warn("Milan fixtures skipped:", e.message); }
@@ -365,6 +365,23 @@ if (!live.wiki?.at || manual || Date.now() - Date.parse(live.wiki.at) > WIKI_EVE
         e.g += Math.max(0, dg); e.a += Math.max(0, da);
         live.pulisicLog[lastMatch.date] = e;
         console.log(`Pulisic +${Math.max(0, dg)} G, +${Math.max(0, da)} A credited to ${lastMatch.home}–${lastMatch.away} (${lastMatch.date})`);
+        if (dg > 0) {
+          // new goal(s): add the match to the goals list; minutes from the match details if the feed provides them
+          let minutes = [];
+          try {
+            if (lastMatch.id && FD) {
+              const md = await getJSON(`https://api.football-data.org/v4/matches/${lastMatch.id}`, { "X-Auth-Token": FD });
+              minutes = (md.goals || []).filter((g) => /pulisic/i.test(g.scorer?.name || "") && g.type !== "OWN")
+                .map((g) => `${g.minute}${g.injuryTime ? "+" + g.injuryTime : ""}'` + (g.type === "PENALTY" ? " (pen.)" : ""));
+            }
+          } catch (e) { console.warn("Goal minutes not available:", e.message); }
+          const y = Number(lastMatch.date.slice(0, 4)), mo = Number(lastMatch.date.slice(5, 7));
+          const sy = mo >= 7 ? y : y - 1;
+          live.autoGoals = (live.autoGoals || []).filter((g) => g.date !== lastMatch.date);
+          live.autoGoals.push({ date: lastMatch.date, comp: "Serie A", home: lastMatch.home, away: lastMatch.away, score: lastMatch.score,
+            minutes, count: e.g, season: `${sy}/${String((sy + 1) % 100).padStart(2, "0")}` });
+          console.log(`Goals list: added ${lastMatch.home}–${lastMatch.away}${minutes.length ? " " + minutes.join(", ") : " (minute not in feed)"}`);
+        }
       }
     }
     live.pulisicPrev = { goals: F.stats.goals, assists: F.stats.assists };
@@ -384,7 +401,8 @@ if (!live.wiki?.at || manual || Date.now() - Date.parse(live.wiki.at) > WIKI_EVE
   const elTable = A.europaLeague || live.wiki?.europaLeague;
   if (elTable) { live.standings = live.standings || {}; live.standings.europaLeague = elTable; }
   if (live.wiki?.usa) live.intl = live.wiki.usa;
-  if (live.wiki?.goals) live.goals = live.wiki.goals;
+  const goalList = [...(live.wiki?.goals?.list || []), ...(live.autoGoals || [])];
+  if (goalList.length) live.goals = { list: goalList, asOf: today };
 
   const cs = A.serieA ? { ...A.serieA } : {};
   if (F.stats) {
