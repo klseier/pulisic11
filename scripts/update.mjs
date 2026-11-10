@@ -343,6 +343,41 @@ if (!live.wiki?.at || manual || Date.now() - Date.parse(live.wiki.at) > WIKI_EVE
   console.log("Wikipedia: checked in the last 6 h — skipped.");
 }
 
+/* ---------- latest news headlines about Pulisic (Google News RSS: headline + source + link only) ---------- */
+{
+  const feeds = {
+    en: "https://news.google.com/rss/search?q=Pulisic&hl=en-US&gl=US&ceid=US:en",
+    it: "https://news.google.com/rss/search?q=Pulisic&hl=it&gl=IT&ceid=IT:it",
+  };
+  const dec = (x) => x.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'")
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#(\d+);/g, (m, n) => String.fromCharCode(+n)).trim();
+  const tag = (block, t) => { const m = block.match(new RegExp(`<${t}[^>]*>([\\s\\S]*?)</${t}>`, "i")); return m ? dec(m[1]) : ""; };
+  const news = live.news || {};
+  for (const [lang, url] of Object.entries(feeds)) {
+    try {
+      const r = await fetch(url, { headers: { "User-Agent": "pulisic11-fan-site/1.0" }, signal: AbortSignal.timeout(30000) });
+      if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+      const xml = await r.text();
+      const seen = new Set(), weekAgo = Date.now() - 7 * 864e5;
+      const items = (xml.match(/<item>[\s\S]*?<\/item>/g) || []).map((b) => {
+        const source = tag(b, "source");
+        let title = tag(b, "title");
+        if (source && title.endsWith(" - " + source)) title = title.slice(0, -(source.length + 3));
+        const at = Date.parse(tag(b, "pubDate"));
+        return { title, source, url: tag(b, "link"), at: isNaN(at) ? null : new Date(at).toISOString() };
+      }).filter((n) => {
+        if (!n.title || !n.url || !/puli[sš]i[cć]/i.test(n.title)) return false;
+        if (n.at && Date.parse(n.at) < weekAgo) return false;
+        const k = n.title.toLowerCase().replace(/[^a-z0-9à-ù]+/g, " ").trim().slice(0, 60);
+        if (seen.has(k)) return false; seen.add(k); return true;
+      }).sort((a, b) => (b.at || "").localeCompare(a.at || "")).slice(0, 6);
+      if (items.length) news[lang] = items;
+      console.log(`News (${lang}): ${items.length} headlines`);
+    } catch (e) { console.warn(`News (${lang}) skipped:`, e.message); }
+  }
+  live.news = news;
+}
+
 /* ---------- combine both football sources into what the page reads ---------- */
 {
   const A = live.af || {}, F = live.fd || {};
