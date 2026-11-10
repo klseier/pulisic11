@@ -758,10 +758,27 @@
       (G.partial ? "" : '<p class="lg-nth">' + esc(nthLabel(total, goalCount(last))) + "</p>");
   }
 
+  /* shrink the nickname until both words fit between the surname and the end of "Christian" */
+  function fitNick() {
+    var el = document.querySelector(".hero-nick"), h1 = document.querySelector(".hero-name");
+    if (!el || !h1) return;
+    var base = parseFloat(getComputedStyle(h1).fontSize);
+    function tryFit(minEm) {
+      var em = 0.15;
+      el.style.fontSize = base * em + "px";
+      while (el.scrollWidth > el.clientWidth + 1 && em > minEm) { em -= 0.005; el.style.fontSize = base * em + "px"; }
+      return el.scrollWidth <= el.clientWidth + 1;
+    }
+    el.classList.remove("no-stars");
+    if (!tryFit(0.11)) { el.classList.add("no-stars"); tryFit(0.07); }
+  }
+  window.addEventListener("resize", fitNick);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitNick);
+
   function renderAll() {
     applyStatic(); renderHero(); renderNext(); renderFan(); renderAthlete();
     renderFixtures(); renderStandings(); renderStats(); renderProfile();
-    renderMiniFixtures(); renderMiniTable(); renderMiniStats(); renderGoals(); renderHeroAch();
+    renderMiniFixtures(); renderMiniTable(); renderMiniStats(); renderGoals(); renderHeroAch(); fitNick();
   }
 
   /* ---------- events ---------- */

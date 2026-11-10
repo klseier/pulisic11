@@ -589,3 +589,19 @@ td.pts { font-weight: 700; }
 }
 .hero-nick::before, .hero-nick::after { content: "★"; font-size: .7em; color: var(--nero); margin: 0 .6em; }
 @media (max-width: 560px) { .hero-nick { letter-spacing: .08em; } .hero-nick::before, .hero-nick::after { margin: 0 .35em; } }
+
+/* ---------- Hero: "new post" pill sits right above the top-post card ---------- */
+.hero-art:has(.hero-new:not([hidden])) { padding-top: 0; }
+.hero-cardcol { display: flex; flex-direction: column; align-items: center; gap: 1.1rem; }
+.hero-cardcol .hero-new { position: static; max-width: none; }
+@media (max-width: 900px) {
+  .hero-cardcol { display: contents; }
+  .hero-cardcol .hero-new { flex: 0 0 100%; }
+}
+/* nickname: tighter so it stays inside the space under "Christian" (fitted by script) */
+.hero-nick { margin-left: .5em; letter-spacing: .08em; overflow: hidden; }
+.hero-nick::before, .hero-nick::after { margin: 0 .35em; }
+.hn-last { width: 0; min-width: 100%; }
+.hero-nick { min-width: 0; }
+.hero-nick { overflow: visible; }
+.hero-nick.no-stars::before, .hero-nick.no-stars::after { display: none; }
