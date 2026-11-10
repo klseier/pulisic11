@@ -146,6 +146,21 @@ window.SITE_DATA = {
     ],
   },
 
+  /* ---------------------------------------------------------------
+   * GOALS FOR MILAN — filled automatically from Wikipedia's season articles.
+   * This seed covers 2026/27 so far and is shown until the full list loads.
+   * ------------------------------------------------------------- */
+  goals: {
+    partial: true,
+    asOf: "2026-11-10",
+    list: [
+      { date: "2026-11-08", comp: "Serie A", home: "Genoa", away: "AC Milan", score: "1–2", minutes: ["19'"], season: "2026/27" },
+      { date: "2026-10-31", comp: "Serie A", home: "AC Milan", away: "Inter", score: "3–1", minutes: ["4'"], season: "2026/27" },
+      { date: "2026-10-25", comp: "Serie A", home: "Udinese", away: "AC Milan", score: "0–2", minutes: [], season: "2026/27" },
+      { date: "2026-09-20", comp: "Serie A", home: "AC Milan", away: "Lecce", score: "3–0", minutes: [], season: "2026/27" },
+    ],
+  },
+
   career: [
     { years: "2015–2019", club: "Borussia Dortmund", country: "DE" },
     { years: "2019–2023", club: "Chelsea", country: "EN" },

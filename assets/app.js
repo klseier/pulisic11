@@ -72,6 +72,8 @@
     }
     if (live.clubStats && live.clubStats.milanTotals) D.clubStats.milanTotals = live.clubStats.milanTotals;
     if (live.intl && live.intl.caps) { D.player.caps = live.intl.caps; D.player.intlGoals = live.intl.goals; D.player.intlAsOf = live.intl.asOf; }
+    if (live.pulisicLog) D.pulisicLog = live.pulisicLog;
+    if (live.goals && live.goals.list && live.goals.list.length) D.goals = { list: live.goals.list, asOf: live.goals.asOf, partial: false };
     if (live.updated && live.updated > D.updated) D.updated = live.updated;
   }
 
@@ -362,6 +364,63 @@
     $("heroCardLikes").textContent = pick.likes != null ? "♥ " + num(pick.likes) : "";
   }
 
+  /* "new post" ribbon: shown while the fan page's newest post is under 24h old */
+  function postTime(p) { return Date.parse(p.ts || (p.date + "T12:00:00Z")); }
+  function agoStr(ms) {
+    var h = Math.floor(ms / 3600e3);
+    if (h < 1) return t("new.justNow");
+    return t("new.hoursAgo", { n: h });
+  }
+  function renderHeroNew() {
+    var el = $("heroNew");
+    if (!el) return;
+    var posts = fanPosts();
+    if (!posts.length) { el.hidden = true; return; }
+    var p = posts.sort(function (a, b) { return postTime(b) - postTime(a); })[0];
+    var age = Date.now() - postTime(p);
+    if (!(age < 864e5) || age < -36e5) { el.hidden = true; return; }
+    el.href = p.url;
+    $("heroNewLabel").textContent = p.type === "VIDEO" ? t("new.reel") : t("new.post");
+    $("heroNewAgo").textContent = p.ts ? agoStr(Math.max(0, age)) : t("new.today");
+    var box = $("heroNewImg"); box.innerHTML = "";
+    if (p.image) {
+      var img = new Image(); img.alt = ""; img.referrerPolicy = "no-referrer"; img.decoding = "async";
+      img.onerror = function () { box.innerHTML = ""; };
+      box.appendChild(img); img.src = p.image;
+    }
+    el.hidden = false;
+  }
+
+  /* achievements badge: goals and assists for Milan, with the next round milestone */
+  function milanCareer() {
+    var tot = D.clubStats.milanTotals || {}, g = tot.goals || 0, a = tot.assists || 0;
+    var log = D.pulisicLog || {};
+    Object.keys(log).forEach(function (d) { if (!tot.asOf || d > tot.asOf) { g += log[d].g || 0; a += log[d].a || 0; } });
+    var G = D.goals;
+    if (G && !G.partial && G.list) {
+      var lt = G.list.reduce(function (n, x) { return n + goalCount(x); }, 0);
+      if (lt > g) g = lt;
+    }
+    return { goals: g, assists: a };
+  }
+  function renderHeroAch() {
+    var el = $("heroAch");
+    if (!el) return;
+    var c = milanCareer();
+    if (!c.goals && !c.assists) { el.hidden = true; return; }
+    function cell(n, label, step, key) {
+      var next = (Math.floor(n / step) + 1) * step, pct = Math.round(((n % step) / step) * 100);
+      var hit = n > 0 && n % step === 0;
+      return '<span class="ach-cell' + (hit ? " hit" : "") + '"><b class="ach-n">' + n + '</b><span class="ach-l">' + esc(label) + "</span>" +
+        '<span class="ach-bar" aria-hidden="true"><i style="width:' + (hit ? 100 : pct) + '%"></i></span>' +
+        '<span class="ach-next">' + esc(hit ? t("ach.reached", { n: n }) : t("ach.toGo", { k: next - n, n: next })) + "</span></span>";
+    }
+    el.innerHTML = '<span class="ach-head">' + esc(t("ach.title")) + "</span>" +
+      '<span class="ach-row">' + cell(c.goals, t("stats.goals"), 10, "g") + cell(c.assists, t("stats.assists"), 10, "a") + "</span>";
+    el.setAttribute("aria-label", t("ach.title") + ": " + c.goals + " " + t("stats.goals") + ", " + c.assists + " " + t("stats.assists"));
+    el.hidden = false;
+  }
+
   /* trending: likes gained since the previous update */
   function trendInfo() {
     var f = D.fanPage;
@@ -487,7 +546,7 @@
   }
 
   function renderFan() {
-    renderFanHead(); renderFanKpis(); renderFanFeed(); renderLikesChart(); renderHeroCard();
+    renderFanHead(); renderFanKpis(); renderFanFeed(); renderLikesChart(); renderHeroCard(); renderHeroNew();
     lineChart("fanFollowersChart", "fanFollowersTable", "fanFollowersNote", sortedHistory(D.fanPage));
   }
 
@@ -611,10 +670,64 @@
     $("miniStats").innerHTML = items.map(function (i) { return '<div class="' + i[2] + '"><dt>' + esc(i[0]) + "</dt><dd>" + i[1] + "</dd></div>"; }).join("");
   }
 
+  /* ---------- goals for Milan ---------- */
+  var goalSeason = "all", goalComp = "all", goalsShown = 15;
+  function compGroup(c) { return /serie a/i.test(c) ? "sa" : /league/i.test(c) ? "eu" : "cup"; }
+  var GROUP_LABEL = { sa: "Serie A", eu: "UEFA", cup: "Coppa Italia / Supercoppa" };
+  function goalCount(g) { return Math.max(1, g.minutes.length); }
+  function isMilan(n) { return /milan/i.test(n) && !/inter/i.test(n); }
+
+  function renderGoals() {
+    var G = D.goals;
+    if (!G || !G.list) return;
+    var list = G.list.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+    var total = list.reduce(function (n, g) { return n + goalCount(g); }, 0);
+
+    $("goalsSub").textContent = G.partial ? t("goals.subPartial") : t("goals.sub", { date: dateStr(G.asOf) });
+    var by = { sa: 0, eu: 0, cup: 0 };
+    list.forEach(function (g) { by[compGroup(g.comp)] += goalCount(g); });
+    $("goalsSummary").innerHTML = "<strong>" + esc(t("goals.summary", { n: total, m: list.length })) + "</strong>" +
+      Object.keys(by).filter(function (k) { return by[k]; }).map(function (k) { return '<span class="gs-item"><i class="gdot ' + k + '"></i>' + esc(GROUP_LABEL[k]) + " " + by[k] + "</span>"; }).join("");
+
+    var seasons = [];
+    list.forEach(function (g) { if (seasons.indexOf(g.season) < 0) seasons.push(g.season); });
+    if (seasons.length < 2) goalSeason = "all";
+    $("goalSeasons").innerHTML = seasons.length < 2 ? "" : [["all", t("goals.all")]].concat(seasons.map(function (x) { return [x, x]; })).map(function (o) {
+      return '<button role="tab" type="button" data-gseason="' + esc(o[0]) + '" aria-selected="' + (goalSeason === o[0]) + '">' + esc(o[1]) + "</button>";
+    }).join("");
+    var groups = Object.keys(by).filter(function (k) { return by[k]; });
+    if (groups.length < 2) goalComp = "all";
+    $("goalComps").innerHTML = groups.length < 2 ? "" : [["all", t("goals.allComps")]].concat(groups.map(function (k) { return [k, GROUP_LABEL[k]]; })).map(function (o) {
+      return '<button role="tab" type="button" data-gcomp="' + o[0] + '" aria-selected="' + (goalComp === o[0]) + '">' + esc(o[1]) + "</button>";
+    }).join("");
+
+    var asc = list.slice().reverse(), running = 0, nth = {};
+    asc.forEach(function (g) { running += goalCount(g); nth[g.date + g.minutes.join()] = running; });
+    var shown = list.filter(function (g) { return (goalSeason === "all" || g.season === goalSeason) && (goalComp === "all" || compGroup(g.comp) === goalComp); });
+    $("goalList").innerHTML = shown.length ? shown.slice(0, goalsShown).map(function (g) {
+      var n = goalCount(g), tag = n === 2 ? t("goals.brace") : n >= 3 ? t("goals.hat") : "";
+      var team = function (x) { return isMilan(x) ? '<span class="us">' + esc(x) + "</span>" : esc(x); };
+      var mins = g.minutes.length ? g.minutes.map(function (m) { return '<span class="gmin">' + esc(m.replace("(pen.)", "(" + t("goals.pen") + ")")) + "</span>"; }).join("") : '<span class="gmin muted">⚽</span>';
+      return '<li class="goal"><span class="g-date">' + esc(dateStr(g.date, { day: "numeric", month: "short" })) + "<small>" + esc(String(g.date).slice(0, 4)) + "</small></span>" +
+        '<span class="g-match">' + team(g.home) + " – " + team(g.away) + (g.score ? ' <b class="g-score">' + esc(g.score) + "</b>" : "") +
+        '<span class="g-comp"><i class="gdot ' + compGroup(g.comp) + '"></i>' + esc(g.comp) + (tag ? " · " + esc(tag) : "") + (G.partial ? "" : " · " + esc(t("goals.nth", { n: nth[g.date + g.minutes.join()] }))) + "</span></span>" +
+        '<span class="g-mins">' + mins + "</span></li>";
+    }).join("") : '<li class="empty">' + esc(t("goals.empty")) + "</li>";
+    $("goalsMore").hidden = shown.length <= goalsShown;
+
+    var last = list[0], w = $("wGoal");
+    if (!last) { w.hidden = true; return; }
+    w.hidden = false;
+    var opp = isMilan(last.home) ? last.away : last.home;
+    $("lastGoal").innerHTML = '<p class="lg-opp">⚽ ' + esc(opp) + (last.minutes.length ? ' <span class="lg-min">' + esc(last.minutes.join(", ")) + "</span>" : "") + "</p>" +
+      '<p class="w-sub">' + esc(last.home + " – " + last.away + (last.score ? " " + last.score : "")) + "<br>" + esc(last.comp) + ", " + esc(dateStr(last.date)) + "</p>" +
+      (G.partial ? "" : '<p class="lg-nth">' + esc(t("goals.nth", { n: total })) + "</p>");
+  }
+
   function renderAll() {
     applyStatic(); renderHero(); renderNext(); renderFan(); renderAthlete();
     renderFixtures(); renderStandings(); renderStats(); renderProfile();
-    renderMiniFixtures(); renderMiniTable(); renderMiniStats();
+    renderMiniFixtures(); renderMiniTable(); renderMiniStats(); renderGoals(); renderHeroAch();
   }
 
   /* ---------- events ---------- */
@@ -654,6 +767,13 @@
     });
   });
   $("feedMore").addEventListener("click", function () { feedShown += 12; renderFanFeed(); });
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-gseason],[data-gcomp]");
+    if (!b) return;
+    if (b.dataset.gseason) goalSeason = b.dataset.gseason; else goalComp = b.dataset.gcomp;
+    goalsShown = 15; renderGoals();
+  });
+  $("goalsMore").addEventListener("click", function () { goalsShown = 1000; renderGoals(); });
 
   renderAll();
 
