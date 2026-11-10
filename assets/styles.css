@@ -605,3 +605,24 @@ td.pts { font-weight: 700; }
 .hero-nick { min-width: 0; }
 .hero-nick { overflow: visible; }
 .hero-nick.no-stars::before, .hero-nick.no-stars::after { display: none; }
+
+/* ---------- News widget ---------- */
+.news-list { list-style: none; margin: .5rem 0 0; padding: 0; }
+.news-list li { padding: .6rem 0; border-top: 1px solid var(--rule); }
+.news-list li:first-child { border-top: 0; padding-top: .2rem; }
+.news-list a { display: block; color: var(--nero); text-decoration: none; font-weight: 600; font-size: .92rem; line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.news-list a:hover, .news-list a:focus-visible { color: var(--rosso); text-decoration: underline; }
+.news-meta { display: block; margin-top: .25rem; font-size: .76rem; color: var(--muted); }
+.w-note { margin: .5rem 0 0; font-size: .72rem; color: var(--muted); }
+
+/* ---------- Tabs: one colour rule for the whole site ----------
+   A tab that stands for a category takes that category's colour (the same as its dot/badge elsewhere):
+   Milan / Serie A = rosso, USA / UEFA = blue, cups = gold. Every other tab is Milan black, with a red hover. */
+.tabs button { --tone: var(--rosso); --on: var(--nero); transition: background-color .15s, border-color .15s, color .15s; }
+.tabs button:hover:not([aria-selected="true"]) { border-color: var(--tone); color: var(--tone); }
+.tabs button[aria-selected="true"] { border-color: var(--on); background: var(--on); color: #fff; }
+.tabs [data-filter="milan"], .tabs [data-comp="serieA"], .tabs [data-gcomp="sa"] { --tone: var(--rosso); --on: var(--rosso); }
+.tabs [data-filter="usa"], .tabs [data-comp="europaLeague"], .tabs [data-gcomp="eu"] { --tone: var(--stars); --on: var(--stars); }
+.tabs [data-gcomp="cup"] { --tone: #8E5F12; --on: #9A6A16; }
+@media (prefers-reduced-motion: reduce) { .tabs button { transition: none; } }
