@@ -1790,10 +1790,115 @@
         ]
       ]
     },
-    "at": "2026-11-10T17:07:08.404Z",
+    "at": "2026-11-10T18:23:52.803Z",
     "usa": {
       "caps": 90,
       "goals": 33,
+      "asOf": "2026-11-10"
+    },
+    "goals": {
+      "list": [
+        {
+          "date": "2026-09-12",
+          "comp": "Serie A",
+          "home": "Lazio",
+          "away": "AC Milan",
+          "score": "2–2",
+          "minutes": [
+            "59'"
+          ],
+          "season": "2026/27"
+        },
+        {
+          "date": "2025-10-05",
+          "comp": "Serie A",
+          "home": "Juventus",
+          "away": "AC Milan",
+          "score": "0–0",
+          "minutes": [
+            "53'"
+          ],
+          "season": "2025/26"
+        },
+        {
+          "date": "2025-05-14",
+          "comp": "Coppa Italia",
+          "home": "AC Milan",
+          "away": "Bologna",
+          "score": "0–1",
+          "minutes": [
+            "45+2'"
+          ],
+          "season": "2024/25"
+        },
+        {
+          "date": "2025-04-05",
+          "comp": "Serie A",
+          "home": "AC Milan",
+          "away": "Fiorentina",
+          "score": "2–2",
+          "minutes": [
+            "58'"
+          ],
+          "season": "2024/25"
+        },
+        {
+          "date": "2025-02-22",
+          "comp": "Serie A",
+          "home": "Torino",
+          "away": "AC Milan",
+          "score": "2–1",
+          "minutes": [
+            "33'"
+          ],
+          "season": "2024/25"
+        },
+        {
+          "date": "2025-01-29",
+          "comp": "Champions League",
+          "home": "Dinamo Zagreb",
+          "away": "",
+          "score": "2–1",
+          "minutes": [
+            "26'"
+          ],
+          "season": "2024/25"
+        },
+        {
+          "date": "2024-04-11",
+          "comp": "Europa League",
+          "home": "AC Milan",
+          "away": "",
+          "score": "0–1",
+          "minutes": [
+            "33'"
+          ],
+          "season": "2023/24"
+        },
+        {
+          "date": "2024-03-01",
+          "comp": "Serie A",
+          "home": "Lazio",
+          "away": "AC Milan",
+          "score": "0–1",
+          "minutes": [
+            "90+6'"
+          ],
+          "season": "2023/24"
+        },
+        {
+          "date": "2023-09-23",
+          "comp": "Serie A",
+          "home": "AC Milan",
+          "away": "Hellas Verona",
+          "score": "1–0",
+          "minutes": [
+            "76'"
+          ],
+          "season": "2023/24"
+        }
+      ],
+      "total": 9,
       "asOf": "2026-11-10"
     }
   },
@@ -1806,5 +1911,110 @@
   "pulisicPrev": {
     "goals": 4,
     "assists": 1
+  },
+  "goals": {
+    "list": [
+      {
+        "date": "2026-09-12",
+        "comp": "Serie A",
+        "home": "Lazio",
+        "away": "AC Milan",
+        "score": "2–2",
+        "minutes": [
+          "59'"
+        ],
+        "season": "2026/27"
+      },
+      {
+        "date": "2025-10-05",
+        "comp": "Serie A",
+        "home": "Juventus",
+        "away": "AC Milan",
+        "score": "0–0",
+        "minutes": [
+          "53'"
+        ],
+        "season": "2025/26"
+      },
+      {
+        "date": "2025-05-14",
+        "comp": "Coppa Italia",
+        "home": "AC Milan",
+        "away": "Bologna",
+        "score": "0–1",
+        "minutes": [
+          "45+2'"
+        ],
+        "season": "2024/25"
+      },
+      {
+        "date": "2025-04-05",
+        "comp": "Serie A",
+        "home": "AC Milan",
+        "away": "Fiorentina",
+        "score": "2–2",
+        "minutes": [
+          "58'"
+        ],
+        "season": "2024/25"
+      },
+      {
+        "date": "2025-02-22",
+        "comp": "Serie A",
+        "home": "Torino",
+        "away": "AC Milan",
+        "score": "2–1",
+        "minutes": [
+          "33'"
+        ],
+        "season": "2024/25"
+      },
+      {
+        "date": "2025-01-29",
+        "comp": "Champions League",
+        "home": "Dinamo Zagreb",
+        "away": "",
+        "score": "2–1",
+        "minutes": [
+          "26'"
+        ],
+        "season": "2024/25"
+      },
+      {
+        "date": "2024-04-11",
+        "comp": "Europa League",
+        "home": "AC Milan",
+        "away": "",
+        "score": "0–1",
+        "minutes": [
+          "33'"
+        ],
+        "season": "2023/24"
+      },
+      {
+        "date": "2024-03-01",
+        "comp": "Serie A",
+        "home": "Lazio",
+        "away": "AC Milan",
+        "score": "0–1",
+        "minutes": [
+          "90+6'"
+        ],
+        "season": "2023/24"
+      },
+      {
+        "date": "2023-09-23",
+        "comp": "Serie A",
+        "home": "AC Milan",
+        "away": "Hellas Verona",
+        "score": "1–0",
+        "minutes": [
+          "76'"
+        ],
+        "season": "2023/24"
+      }
+    ],
+    "total": 9,
+    "asOf": "2026-11-10"
   }
 }
