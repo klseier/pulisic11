@@ -306,7 +306,7 @@
     var hist = sortedHistory(f), delta = "";
     if (hist.length > 1) {
       var diff = f.followers - hist[0].followers;
-      delta = '<li class="ig-delta ' + (diff < 0 ? "down" : "up") + '">' + (diff >= 0 ? "▲ +" : "▼ ") + num(diff) + " " + esc(t("ig.change", { d: "", date: dateStr(hist[0].date) }).trim()) + "</li>";
+      if (diff !== 0) delta = '<li class="ig-delta ' + (diff < 0 ? "down" : "up") + '">' + (diff >= 0 ? "▲ +" : "▼ ") + num(diff) + " " + esc(t("ig.change", { d: "", date: dateStr(hist[0].date) }).trim()) + "</li>";
     }
     $("fanCounts").innerHTML = counts.map(function (c) { return "<li><strong>" + esc(c[0]) + "</strong> " + esc(c[1]) + "</li>"; }).join("") + delta;
     $("fanBio").innerHTML = (f.bio || []).map(function (l) { return "<p>" + bioHtml(l) + "</p>"; }).join("");
@@ -486,7 +486,7 @@
     var hist = sortedHistory(a), delta = "";
     if (hist.length > 1) {
       var diff = a.followers - hist[0].followers;
-      delta = '<li class="ig-delta ' + (diff < 0 ? "down" : "up") + '">' + (diff >= 0 ? "▲ +" : "▼ ") + num(diff) + " " + esc(t("ig.change", { d: "", date: dateStr(hist[0].date) }).trim()) + "</li>";
+      if (diff !== 0) delta = '<li class="ig-delta ' + (diff < 0 ? "down" : "up") + '">' + (diff >= 0 ? "▲ +" : "▼ ") + num(diff) + " " + esc(t("ig.change", { d: "", date: dateStr(hist[0].date) }).trim()) + "</li>";
     }
     $("athCounts").innerHTML = "<li><strong>" + compact(a.followers) + "</strong> " + esc(t("fan.followers")) + "</li><li><strong>" + num(a.posts) + "</strong> " + esc(t("fan.posts")) + "</li>" + delta;
     if (!posts.length) { $("athFeed").innerHTML = profileFallback(h, 420); return; }
@@ -594,9 +594,9 @@
   function renderMiniStats() {
     var c = D.clubStats.currentSeason;
     $("miniStatsNote").textContent = c.label;
-    var items = [[t("stats.apps"), c.apps], [t("stats.goals"), c.goals], [t("stats.assists"), c.assists]]
+    var items = [[t("stats.apps"), c.apps, ""], [t("stats.goals"), c.goals, "hl"], [t("stats.assists"), c.assists, ""]]
       .filter(function (i) { return i[1] != null; });
-    $("miniStats").innerHTML = items.map(function (i, k) { return '<div class="' + (k === 1 ? "hl" : "") + '"><dt>' + esc(i[0]) + "</dt><dd>" + i[1] + "</dd></div>"; }).join("");
+    $("miniStats").innerHTML = items.map(function (i) { return '<div class="' + i[2] + '"><dt>' + esc(i[0]) + "</dt><dd>" + i[1] + "</dd></div>"; }).join("");
   }
 
   function renderAll() {
