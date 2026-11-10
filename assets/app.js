@@ -64,6 +64,7 @@
       D.clubStats.seasons.forEach(function (x) { if (x.live) { x.apps = cur.apps; x.goals = cur.goals; x.assists = cur.assists; } });
     }
     if (live.clubStats && live.clubStats.milanTotals) D.clubStats.milanTotals = live.clubStats.milanTotals;
+    if (live.intl && live.intl.caps) { D.player.caps = live.intl.caps; D.player.intlGoals = live.intl.goals; D.player.intlAsOf = live.intl.asOf; }
     if (live.updated && live.updated > D.updated) D.updated = live.updated;
   }
 
