@@ -183,6 +183,83 @@ if (AFK && (manual || !live.af?.at || Date.now() - Date.parse(live.af.at) > AF_E
   console.log("API_FOOTBALL_KEY not set — Europa League, USA and full stats left as is.");
 }
 
+/* ---------- Wikipedia (official MediaWiki API, free, no key) ----------
+   Europa League league-phase table and Pulisic's USA caps/goals.
+   Checked every 6 hours. If a page changes its layout and can't be read,
+   the previous values are kept and the run continues. */
+const WIKI_EVERY = 6 * 3600e3;
+if (!live.wiki?.at || manual || Date.now() - Date.parse(live.wiki.at) > WIKI_EVERY) {
+  const W = live.wiki || {};
+  const UA = { "User-Agent": "pulisic11-fan-site/1.0 (https://github.com/klseier/pulisic11; GitHub Actions)" };
+  const wiki = async (page) => {
+    const url = `https://en.wikipedia.org/w/api.php?action=parse&format=json&formatversion=2&redirects=1&prop=text%7Cwikitext&page=${encodeURIComponent(page)}`;
+    const j = await getJSON(url, UA);
+    if (j.error) throw new Error(`${page}: ${j.error.info}`);
+    return j.parse;
+  };
+  const strip = (h) => h.replace(/<sup[\s\S]*?<\/sup>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<[^>]+>/g, "")
+    .replace(/&#160;|&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&#8211;|&ndash;/g, "–").replace(/&#8722;|&minus;|−/g, "-")
+    .replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/\[[^\]]{1,3}\]/g, "").replace(/\s+/g, " ").trim();
+
+  // 1) Europa League league-phase table: first wikitable with Pos/Team/Pld/W/D/L/Pts headers and 30+ rows
+  try {
+    const y = (() => { const d = new Date(); return d.getUTCMonth() >= 6 ? d.getUTCFullYear() : d.getUTCFullYear() - 1; })();
+    const yy = String((y + 1) % 100).padStart(2, "0");
+    let html = "";
+    for (const title of [`${y}–${yy} UEFA Europa League league phase`, `${y}–${yy} UEFA Europa League`]) {
+      try { html = (await wiki(title)).text; break; } catch (e) { console.warn("Wikipedia:", e.message); }
+    }
+    let rows = null;
+    for (const t of html.match(/<table[^>]*wikitable[\s\S]*?<\/table>/gi) || []) {
+      const trs = (t.match(/<tr[\s\S]*?<\/tr>/gi) || []).map((tr) => (tr.match(/<t[hd][^>]*>[\s\S]*?<\/t[hd]>/gi) || []).map(strip));
+      const hi = trs.findIndex((c) => c.includes("Pld") && c.includes("Pts") && c.some((x) => /^Pos/.test(x)));
+      if (hi < 0) continue;
+      const head = trs[hi], col = (k) => head.findIndex((x) => x === k || x.startsWith(k));
+      const iPos = col("Pos"), iTeam = col("Team"), iP = col("Pld"), iW = col("W"), iD = col("D"), iL = col("L"), iPts = col("Pts");
+      const data = trs.slice(hi + 1).filter((c) => /^\d+$/.test(c[iPos] || "") && /^\d+$/.test(c[iPts] || ""));
+      if (data.length >= 30) {
+        rows = data.map((c) => [+c[iPos], c[iTeam].replace(/\s*\((H|X|E|C)\)$/, "").replace(/^Milan$/, "AC Milan"), +c[iP], +c[iW], +c[iD], +c[iL], +c[iPts]]);
+        break;
+      }
+    }
+    if (rows) {
+      W.europaLeague = {
+        label: `UEFA Europa League ${y}/${yy}`, asOf: today,
+        note: { en: `League phase, after matchday ${Math.max(...rows.map((r) => r[2]))} (Wikipedia)`, it: `Fase campionato, dopo la ${Math.max(...rows.map((r) => r[2]))}ª giornata (Wikipedia)` },
+        zones: { r16: [1, 8], po: [9, 24], out: [25, 36] },
+        rows,
+      };
+      console.log(`Europa League table (Wikipedia): ${rows.length} rows, Milan ${JSON.stringify(rows.find((r) => /milan/i.test(r[1])))}`);
+    } else console.warn("Europa League table (Wikipedia): table not found — previous values kept.");
+  } catch (e) { console.warn("Europa League table (Wikipedia) skipped:", e.message); }
+
+  // 2) Pulisic's senior USA caps and goals from his infobox
+  try {
+    const wt = (await wiki("Christian Pulisic")).wikitext;
+    const param = (name) => { const m = wt.match(new RegExp("\\|\\s*" + name + "\\s*=\\s*([^\\n]*)")); return m ? m[1].split(/\n\s*\|/)[0].trim() : null; };
+    let found = null;
+    for (let i = 1; i <= 12; i++) {
+      const team = param("nationalteam" + i);
+      if (!team) continue;
+      if (/United States/i.test(team) && !/under|U-?\d{2}|olympic/i.test(team)) found = i;
+    }
+    if (found) {
+      const caps = parseInt(param("nationalcaps" + found), 10), goals = parseInt(param("nationalgoals" + found), 10);
+      const upd = (param("nationalteam-update") || "").replace(/\{\{[^|}]*\|/, "").replace(/[{}]/g, "").replace(/\|/g, " ").trim();
+      const d = Date.parse(upd + " UTC");
+      if (!isNaN(caps) && !isNaN(goals)) {
+        W.usa = { caps, goals, asOf: isNaN(d) ? today : new Date(d).toISOString().slice(0, 10) };
+        console.log(`USA (Wikipedia): ${caps} caps, ${goals} goals, as of ${W.usa.asOf}`);
+      }
+    } else console.warn("USA caps (Wikipedia): senior team row not found — previous values kept.");
+  } catch (e) { console.warn("USA caps (Wikipedia) skipped:", e.message); }
+
+  W.at = new Date().toISOString();
+  live.wiki = W;
+} else {
+  console.log("Wikipedia: checked in the last 6 h — skipped.");
+}
+
 /* ---------- combine both football sources into what the page reads ---------- */
 {
   const A = live.af || {}, F = live.fd || {};
@@ -197,7 +274,9 @@ if (AFK && (manual || !live.af?.at || Date.now() - Date.parse(live.af.at) > AF_E
   [...(F.results || []), ...(A.milanResults || [])].forEach((r) => { if (!res.has(r.date)) res.set(r.date, r); });
   if (res.size) live.recentResults = [...res.values()].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 5);
 
-  if (A.europaLeague) { live.standings = live.standings || {}; live.standings.europaLeague = A.europaLeague; }
+  const elTable = A.europaLeague || live.wiki?.europaLeague;
+  if (elTable) { live.standings = live.standings || {}; live.standings.europaLeague = elTable; }
+  if (live.wiki?.usa) live.intl = live.wiki.usa;
 
   const cs = A.serieA ? { ...A.serieA } : {};
   if (F.stats) {
