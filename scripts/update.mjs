@@ -16,9 +16,16 @@ let live = {};
 try { live = JSON.parse(await readFile(OUT, "utf8")); } catch { /* first run */ }
 live.updated = today;
 
+const IG_TOKEN_FOR_MASK = process.env.IG_ACCESS_TOKEN || "";
 async function getJSON(url, headers = {}) {
   const r = await fetch(url, { headers, signal: AbortSignal.timeout(30000) }); // 30 s per request
-  if (!r.ok) throw new Error(`${r.status} ${r.statusText} for ${url.split("?")[0]}`);
+  if (!r.ok) {
+    // add the API's own explanation (Graph API: error.message / code), never the URL query (it holds the token)
+    let why = "";
+    try { const b = await r.json(); const e = b.error || b; why = [e.message, e.code != null ? `code ${e.code}` : "", e.error_subcode ? `subcode ${e.error_subcode}` : ""].filter(Boolean).join(", "); } catch { /* not JSON */ }
+    if (IG_TOKEN_FOR_MASK) why = why.split(IG_TOKEN_FOR_MASK).join("***");
+    throw new Error(`${r.status} ${r.statusText} for ${url.split("?")[0]}${why ? " — " + why.slice(0, 300) : ""}`);
+  }
   return r.json();
 }
 
