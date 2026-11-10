@@ -562,3 +562,4 @@ td.pts { font-weight: 700; }
 .hn-text b::before { background: #ff4b5f; }
 @media (max-width: 900px) { .hero-num-col .hero-ach { order: 2; } .hero-num-col { gap: .6rem; } }
 .hn-text { flex: 1; }
+.chart-note:empty { display: none; }

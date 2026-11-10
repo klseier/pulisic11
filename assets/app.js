@@ -260,7 +260,7 @@
     hit.addEventListener("pointerleave", function () { cross.setAttribute("visibility", "hidden"); hideTip(); });
     $(tableId).innerHTML = "<table><thead><tr><th>" + t("chart.date") + "</th><th>" + t("chart.followers") + "</th></tr></thead><tbody>" +
       hist.map(function (h) { return "<tr><td>" + esc(dateStr(h.date)) + (h.estimated ? " (" + esc(t("ig.est")) + ")" : "") + "</td><td>" + num(h.followers) + "</td></tr>"; }).join("") + "</tbody></table>";
-    $(noteId).textContent = t("ig.historyNote", { n: hist.length });
+    if ($(noteId)) $(noteId).textContent = "";
   }
 
   /* ---------- Instagram embeds ---------- */
@@ -540,7 +540,7 @@
       hit.addEventListener("click", function () { window.open(p.url, "_blank", "noopener"); });
       svg.appendChild(hit);
     });
-    $("likesNote").textContent = t("fan.likesNote");
+    $("likesNote").textContent = "";
     $("likesTable").innerHTML = "<table><thead><tr><th>" + t("chart.date") + "</th><th>" + t("ig.likes") + "</th><th>" + t("ig.comments") + "</th></tr></thead><tbody>" +
       posts.map(function (p) { return '<tr><td><a href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(dateStr(p.date)) + "</a></td><td>" + num(p.likes) + "</td><td>" + (p.comments != null ? num(p.comments) : "—") + "</td></tr>"; }).join("") + "</tbody></table>";
   }

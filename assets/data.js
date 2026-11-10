@@ -91,9 +91,9 @@ window.SITE_DATA = {
   recentResults: [
     { comp: "Serie A", home: "Genoa", away: "AC Milan", score: "1–2", date: "2026-11-08", pulisic: { en: "Goal (19')", it: "Gol (19')" } },
     { comp: "Europa League", home: "AC Milan", away: "Ferencváros", score: "0–2", date: "2026-11-05" },
-    { comp: "Serie A", home: "AC Milan", away: "Inter", score: "3–1", date: "2026-10-31", pulisic: { en: "Goal", it: "Gol" } },
+    { comp: "Serie A", home: "AC Milan", away: "Inter", score: "3–1", date: "2026-10-31", pulisic: { en: "Goal (4')", it: "Gol (4')" } },
     { comp: "Serie A", home: "AC Milan", away: "Bologna", score: "2–4", date: "2026-10-28" },
-    { comp: "Serie A", home: "Udinese", away: "AC Milan", score: "0–2", date: "2026-10-25", pulisic: { en: "Goal", it: "Gol" } },
+    { comp: "Serie A", home: "Udinese", away: "AC Milan", score: "0–2", date: "2026-10-25", pulisic: { en: "Goal (6')", it: "Gol (6')" } },
   ],
 
   /* ---------------------------------------------------------------
@@ -156,8 +156,8 @@ window.SITE_DATA = {
     list: [
       { date: "2026-11-08", comp: "Serie A", home: "Genoa", away: "AC Milan", score: "1–2", minutes: ["19'"], season: "2026/27" },
       { date: "2026-10-31", comp: "Serie A", home: "AC Milan", away: "Inter", score: "3–1", minutes: ["4'"], season: "2026/27" },
-      { date: "2026-10-25", comp: "Serie A", home: "Udinese", away: "AC Milan", score: "0–2", minutes: [], season: "2026/27" },
-      { date: "2026-09-20", comp: "Serie A", home: "AC Milan", away: "Lecce", score: "3–0", minutes: [], season: "2026/27" },
+      { date: "2026-10-25", comp: "Serie A", home: "Udinese", away: "AC Milan", score: "0–2", minutes: ["6'"], season: "2026/27" },
+      { date: "2026-09-20", comp: "Serie A", home: "AC Milan", away: "Lecce", score: "3–0", minutes: ["14'"], season: "2026/27" },
     ],
   },
 
