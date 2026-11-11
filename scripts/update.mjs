@@ -445,9 +445,11 @@ const DAY = 24 * 3600e3;
 const shortcode = (url) => (url.match(/\/(?:p|reel|tv)\/([^/?#]+)/) || [])[1] || url;
 
 function dailyBaseline(list, now) {
-  // newest snapshot that is at least 24 h old; while the history is shorter than a day, the oldest one
-  const old = list.filter((x) => now - Date.parse(x.at) >= DAY);
-  return old.length ? old[old.length - 1] : list[0] || null;
+  // the snapshot taken closest to 24 h ago (runs are not exactly hourly), at least 20 h old;
+  // while the history is shorter than that, the oldest one
+  const old = list.filter((x) => now - Date.parse(x.at) >= 20 * 3600e3);
+  if (!old.length) return list[0] || null;
+  return old.reduce((best, x) => Math.abs(now - Date.parse(x.at) - DAY) < Math.abs(now - Date.parse(best.at) - DAY) ? x : best);
 }
 
 let igFailed = false;
@@ -487,7 +489,7 @@ if (IG_USER_ID && IG_ACCESS_TOKEN) {
       const likes = {};
       media.forEach((m) => { if (typeof m.like_count === "number") likes[shortcode(m.permalink)] = m.like_count; });
       list.push({ at: p.fetchedAt, likes });
-      const keepFrom = now - DAY - 2 * 3600e3;
+      const keepFrom = now - DAY - 8 * 3600e3;
       snaps[key] = list.filter((x) => Date.parse(x.at) >= keepFrom || x === dailyBaseline(list, now));
       live[key] = p;
       console.log(`@${handle}: ${bd.followers_count} followers, ${media.length} posts read`);
