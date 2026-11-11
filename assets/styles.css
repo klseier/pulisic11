@@ -630,3 +630,10 @@ td.pts { font-weight: 700; }
 .ig-delta.down { color: var(--rosso-deep); background: rgba(192,24,47,.06); }
 .ig-delta.flat { color: var(--muted); background: transparent; }
 .w-athlete .ig-delta.down { color: var(--rosso-deep); }
+
+/* ---------- @cmpulisic: post from the last 24 hours ---------- */
+.tile.is-new { outline: 3px solid var(--rosso); outline-offset: -3px; }
+.tile-new {
+  position: absolute; top: .4rem; left: .4rem; padding: .25rem .45rem; border-radius: 3px;
+  background: var(--rosso); color: #fff; font: 800 .68rem/1 var(--text); letter-spacing: .08em; text-transform: uppercase;
+}

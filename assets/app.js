@@ -597,7 +597,14 @@
     $("athCounts").innerHTML = "<li><strong>" + compact(a.followers) + "</strong> " + esc(t("fan.followers")) + "</li><li><strong>" + num(a.posts) + "</strong> " + esc(t("fan.posts")) + "</li>" + delta;
     if (!posts.length) { $("athFeed").innerHTML = profileFallback(h, 420); return; }
     if (posts.every(function (p) { return p.image; })) {
-      $("athFeed").innerHTML = '<div class="strip">' + posts.map(function (p) { return tileHtml(p); }).join("") + "</div>";
+      $("athFeed").innerHTML = '<div class="strip">' + posts.map(function (p) {
+        // posts from the last 24 hours get a red frame and a NEW label (he posts rarely, so it stands out)
+        var age = p.ts ? Date.now() - Date.parse(p.ts) : NaN, html = tileHtml(p);
+        if (age >= -36e5 && age < 864e5) {
+          html = html.replace('class="tile', 'class="tile is-new').replace("</a>", '<span class="tile-new">' + esc(t("ath.new")) + "</span></a>");
+        }
+        return html;
+      }).join("") + "</div>";
     } else {
       $("athFeed").innerHTML = '<div class="embed-feed">' + posts.slice(0, 3).map(embedHtml).join("") + "</div>";
       loadEmbed();
