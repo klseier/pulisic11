@@ -350,7 +350,9 @@
     ];
     var delta = followerDelta(f);
     $("fanCounts").innerHTML = counts.map(function (c) { return "<li><strong>" + esc(c[0]) + "</strong> " + esc(c[1]) + "</li>"; }).join("") + delta;
-    $("fanBio").innerHTML = (f.bio || []).map(function (l) { return "<p>" + bioHtml(l) + "</p>"; }).join("");
+    var bio = (f.bio || []).filter(function (l) { return /@[A-Za-z0-9._]+/.test(l); });
+    if (!bio.length && f.bio && f.bio.length) bio = [f.bio[0]];
+    $("fanBio").innerHTML = bio.map(function (l) { return "<p>" + bioHtml(l) + "</p>"; }).join("");
   }
 
   /* coin avatar: striped "11" flips over to the real profile picture once it has loaded */
@@ -435,6 +437,23 @@
     }
     return { goals: g, assists: a };
   }
+  /* the big numbers count up from zero the first time the badge is shown */
+  var counted = false;
+  function countUp(root) {
+    if (counted || !root.querySelector(".ach-n")) return;
+    counted = true;
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce || !window.requestAnimationFrame) return;
+    var start = null, dur = 1400;
+    function step(ts) {
+      if (start === null) start = ts;
+      var k = Math.min(1, (ts - start) / dur), e = 1 - Math.pow(1 - k, 3);
+      // re-query each frame: the badge may be re-rendered when live data arrives mid-animation
+      [].forEach.call(root.querySelectorAll(".ach-n"), function (n) { n.textContent = Math.round((+n.getAttribute("data-to") || 0) * e); });
+      if (k < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
   function renderHeroAch() {
     var el = $("heroAch");
     if (!el) return;
@@ -443,12 +462,21 @@
     function cell(n, label, step, key) {
       var next = (Math.floor(n / step) + 1) * step, pct = Math.round(((n % step) / step) * 100);
       var hit = n > 0 && n % step === 0;
-      return '<span class="ach-cell' + (hit ? " hit" : "") + '"><b class="ach-n">' + n + '</b><span class="ach-l">' + esc(label) + "</span>" +
+      return '<span class="ach-cell' + (hit ? " hit" : "") + '"><b class="ach-n" data-to="' + n + '">' + n + '</b><span class="ach-l">' + esc(label) + "</span>" +
         '<span class="ach-bar" aria-hidden="true"><i style="width:' + (hit ? 100 : pct) + '%"></i></span>' +
         '<span class="ach-next">' + esc(hit ? t("ach.reached", { n: n }) : t("ach.toGo", { k: next - n, n: next })) + "</span></span>";
     }
+    // this season, all competitions: hand-checked base + Serie A goals/assists the updater credited after it
+    var st = D.clubStats.seasonTotals, season = "";
+    if (st) {
+      var sg = st.goals || 0, sa = st.assists || 0, slog = D.pulisicLog || {};
+      Object.keys(slog).forEach(function (d) { if (!st.asOf || d > st.asOf) { sg += slog[d].g || 0; sa += slog[d].a || 0; } });
+      season = '<span class="ach-season"><span class="ach-s-label">' + esc(st.label || t("ach.season")) + '</span><span class="ach-s-val"><b>' +
+        sg + "</b> " + esc(t("ach.g")) + ' <i aria-hidden="true">·</i> <b>' + sa + "</b> " + esc(t("ach.a")) + "</span></span>";
+    }
     el.innerHTML = '<span class="ach-head">' + esc(t("ach.title")) + "</span>" +
-      '<span class="ach-row">' + cell(c.goals, t("stats.goals"), 10, "g") + cell(c.assists, t("stats.assists"), 10, "a") + "</span>";
+      '<span class="ach-row">' + cell(c.goals, t("stats.goals"), 10, "g") + cell(c.assists, t("stats.assists"), 10, "a") + "</span>" + season;
+    countUp(el);
     el.setAttribute("aria-label", t("ach.title") + ": " + c.goals + " " + t("stats.goals") + ", " + c.assists + " " + t("stats.assists"));
     el.hidden = false;
   }

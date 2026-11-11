@@ -137,6 +137,7 @@ window.SITE_DATA = {
       asOf: "2026-11-08",
       apps: 8, starts: 6, goals: 4, assists: 1, shots: 11, shotsOnTarget: 7, yellow: 2,
     },
+    seasonTotals: { label: "2026/27", goals: 4, assists: 1, asOf: "2026-11-10" }, // all competitions this season (Flashscore); Serie A goals after asOf are added automatically
     milanTotals: { apps: 145, goals: 46, assists: 25, asOf: "2026-11-10" }, // Flashscore, 10 Nov 2026: 145 apps, 46 G, 25 A (matches the fan page bio)
     seasons: [
       { season: "2023/24", apps: 36, goals: 12, assists: 8 },

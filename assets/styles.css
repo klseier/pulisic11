@@ -637,3 +637,17 @@ td.pts { font-weight: 700; }
   position: absolute; top: .4rem; left: .4rem; padding: .25rem .45rem; border-radius: 3px;
   background: var(--rosso); color: #fff; font: 800 .68rem/1 var(--text); letter-spacing: .08em; text-transform: uppercase;
 }
+
+/* ---------- Badge: this season's line (quiet "sole" of the badge) ---------- */
+.hero-ach { padding-bottom: 0; overflow: hidden; }
+.ach-season {
+  display: flex; justify-content: space-between; align-items: baseline; gap: .75rem;
+  margin: .7rem -.9rem 0; padding: .5rem .9rem .55rem; border-top: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.05);
+}
+.ach-s-label { font: 700 .66rem/1 var(--text); letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.6); }
+.ach-s-val { font-size: .8rem; color: rgba(255,255,255,.8); white-space: nowrap; }
+.ach-s-val b { font: 900 1.05rem/1 var(--display); color: #fff; }
+.ach-s-val b:first-child { color: #ff4b5f; }
+.ach-s-val i { font-style: normal; color: rgba(255,255,255,.35); margin: 0 .15rem; }
+.ach-n { display: inline-block; font-variant-numeric: tabular-nums; min-width: 2ch; }
+.hero-num-col { gap: .7rem; }
