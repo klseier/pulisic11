@@ -225,6 +225,22 @@
   }
   function sortedHistory(p) { return (p.history || []).slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; }); }
 
+  /* followers gained or lost since yesterday's last update (one history point is kept per day) */
+  var PEOPLE_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-3.3 0-7 1.7-7 4.5V20h14v-2.5C16 14.7 12.3 13 9 13zm7.5-2.2a3.3 3.3 0 1 0-1.1-6.4A5.9 5.9 0 0 1 16.5 9a5.9 5.9 0 0 1-1.1 3.6 3.3 3.3 0 0 0 1.1-1.8zM17.6 13.1A5.9 5.9 0 0 1 18 15v5h4v-2.5c0-2.2-2.2-3.7-4.4-4.4z"/></svg>';
+  function followerDelta(p) {
+    if (p.followers == null) return "";
+    var today = (p.fetchedAt ? String(p.fetchedAt) : new Date().toISOString()).slice(0, 10);
+    var prev = sortedHistory(p).filter(function (h) { return h.date < today && h.followers != null; }).pop();
+    if (!prev) return "";
+    var diff = p.followers - prev.followers;
+    var y = new Date(Date.parse(today + "T00:00:00Z") - 864e5).toISOString().slice(0, 10);
+    var when = prev.date === y ? t("ig.sinceYesterday") : t("ig.change", { d: "", date: dateStr(prev.date) }).trim();
+    var cls = diff > 0 ? "up" : diff < 0 ? "down" : "flat";
+    var val = diff > 0 ? "+" + num(diff) : diff < 0 ? "−" + num(-diff) : "±0";
+    return '<li class="ig-delta ' + cls + '" title="' + esc(t("fan.followers")) + '">' + PEOPLE_ICON +
+      '<b>' + val + "</b><span>" + esc(when) + "</span></li>";
+  }
+
   /* ---------- followers line chart (reused for any profile) ---------- */
   function lineChart(hostId, tableId, noteId, hist) {
     var host = $(hostId);
@@ -332,11 +348,7 @@
       [(f.followersApprox ? "≈ " : "") + num(f.followers), t("fan.followers")],
       [num(f.following), t("fan.following")],
     ];
-    var hist = sortedHistory(f), delta = "";
-    if (hist.length > 1) {
-      var diff = f.followers - hist[0].followers;
-      if (diff !== 0) delta = '<li class="ig-delta ' + (diff < 0 ? "down" : "up") + '">' + (diff >= 0 ? "▲ +" : "▼ ") + num(diff) + " " + esc(t("ig.change", { d: "", date: dateStr(hist[0].date) }).trim()) + "</li>";
-    }
+    var delta = followerDelta(f);
     $("fanCounts").innerHTML = counts.map(function (c) { return "<li><strong>" + esc(c[0]) + "</strong> " + esc(c[1]) + "</li>"; }).join("") + delta;
     $("fanBio").innerHTML = (f.bio || []).map(function (l) { return "<p>" + bioHtml(l) + "</p>"; }).join("");
   }
@@ -581,11 +593,7 @@
       av.innerHTML = ""; av.appendChild(im); im.src = a.avatar; av.href = profileUrl(h);
     }
     $("athSub").innerHTML = esc(t(posts.length ? "ath.sub" : "ath.subNoPosts", { h: h })) + ' <a href="' + profileUrl(h) + '" target="_blank" rel="noopener">instagram.com/' + esc(h) + "</a>";
-    var hist = sortedHistory(a), delta = "";
-    if (hist.length > 1) {
-      var diff = a.followers - hist[0].followers;
-      if (diff !== 0) delta = '<li class="ig-delta ' + (diff < 0 ? "down" : "up") + '">' + (diff >= 0 ? "▲ +" : "▼ ") + num(diff) + " " + esc(t("ig.change", { d: "", date: dateStr(hist[0].date) }).trim()) + "</li>";
-    }
+    var delta = followerDelta(a);
     $("athCounts").innerHTML = "<li><strong>" + compact(a.followers) + "</strong> " + esc(t("fan.followers")) + "</li><li><strong>" + num(a.posts) + "</strong> " + esc(t("fan.posts")) + "</li>" + delta;
     if (!posts.length) { $("athFeed").innerHTML = profileFallback(h, 420); return; }
     if (posts.every(function (p) { return p.image; })) {

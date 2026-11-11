@@ -616,3 +616,17 @@ td.pts { font-weight: 700; }
 .tabs [data-filter="usa"], .tabs [data-comp="europaLeague"], .tabs [data-gcomp="eu"] { --tone: var(--stars); --on: var(--stars); }
 .tabs [data-gcomp="cup"] { --tone: #8E5F12; --on: #9A6A16; }
 @media (prefers-reduced-motion: reduce) { .tabs button { transition: none; } }
+
+/* ---------- Followers change since yesterday: framed chip ---------- */
+.ig-delta {
+  display: inline-flex !important; align-items: center; gap: .4rem; width: fit-content;
+  padding: .3rem .7rem .3rem .55rem; border: 1.5px solid currentColor; border-radius: 999px;
+  font-size: .9rem; font-weight: 600; line-height: 1.2;
+}
+.ig-delta svg { flex-shrink: 0; }
+.ig-delta b { font-weight: 800; }
+.ig-delta span { font-weight: 500; }
+.ig-delta.up { color: var(--good); background: rgba(46,125,74,.07); }
+.ig-delta.down { color: var(--rosso-deep); background: rgba(192,24,47,.06); }
+.ig-delta.flat { color: var(--muted); background: transparent; }
+.w-athlete .ig-delta.down { color: var(--rosso-deep); }
