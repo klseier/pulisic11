@@ -651,3 +651,15 @@ td.pts { font-weight: 700; }
 .ach-s-val i { font-style: normal; color: rgba(255,255,255,.35); margin: 0 .15rem; }
 .ach-n { display: inline-block; font-variant-numeric: tabular-nums; min-width: 2ch; }
 .hero-num-col { gap: .7rem; }
+
+/* ---------- Trophies with Milan ---------- */
+.ach-head { display: flex !important; justify-content: space-between; align-items: center; gap: .5rem; }
+.ach-cup {
+  display: inline-flex; align-items: center; gap: .3rem; padding: .2rem .45rem; border-radius: 3px;
+  background: rgba(224,176,74,.16); color: #E9C46A; font: 700 .64rem/1 var(--text); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap;
+}
+.honours li.milan { border-left: 4px solid var(--rosso); padding-left: .75rem; background: rgba(192,24,47,.04); }
+.honours li.milan .tm { color: var(--rosso-deep); font-weight: 600; }
+.ach-head > span:first-child { white-space: nowrap; }
+.ach-cup { letter-spacing: .03em; font-size: .6rem; padding: .2rem .4rem; }
+@media (max-width: 560px) { .cup-yr { display: none; } }

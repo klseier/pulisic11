@@ -474,7 +474,14 @@
       season = '<span class="ach-season"><span class="ach-s-label">' + esc(st.label || t("ach.season")) + '</span><span class="ach-s-val"><b>' +
         sg + "</b> " + esc(t("ach.g")) + ' <i aria-hidden="true">·</i> <b>' + sa + "</b> " + esc(t("ach.a")) + "</span></span>";
     }
-    el.innerHTML = '<span class="ach-head">' + esc(t("ach.title")) + "</span>" +
+    // trophies won with Milan (from the honours list) shown in the badge header
+    var cups = (D.honours || []).filter(function (h) { return /milan/i.test(h.team); }), trophy = "";
+    if (cups.length) {
+      var TROPHY = '<svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" focusable="false"><path fill="currentColor" d="M7 2h10v2h4v3a5 5 0 0 1-4.6 5A5 5 0 0 1 13 15.9V18h3v2H8v-2h3v-2.1A5 5 0 0 1 7.6 12 5 5 0 0 1 3 7V4h4V2zm0 4H5v1a3 3 0 0 0 2 2.8V6zm10 0v3.8A3 3 0 0 0 19 7V6h-2z"/></svg>';
+      trophy = '<span class="ach-cup" title="' + esc(cups.map(function (h) { return h.title + " " + h.year; }).join(", ")) + '">' + TROPHY +
+        (cups.length === 1 ? esc(cups[0].title.replace(/ Italiana$/, "")) + '<span class="cup-yr">&nbsp;' + esc(cups[0].year.replace(/^20(\d\d)\/(\d\d)$/, "$1/$2")) + "</span>" : "×" + cups.length) + "</span>";
+    }
+    el.innerHTML = '<span class="ach-head"><span>' + esc(t("ach.title")) + "</span>" + trophy + "</span>" +
       '<span class="ach-row">' + cell(c.goals, t("stats.goals"), 10, "g") + cell(c.assists, t("stats.assists"), 10, "a") + "</span>" + season;
     countUp(el);
     el.setAttribute("aria-label", t("ach.title") + ": " + c.goals + " " + t("stats.goals") + ", " + c.assists + " " + t("stats.assists"));
@@ -704,8 +711,10 @@
     }).join("");
     var p = D.player;
     $("intl").textContent = t("profile.intl", { caps: p.caps, goals: p.intlGoals, date: dateStr(p.intlAsOf), coach: p.nationalCoach });
-    $("honours").innerHTML = D.honours.map(function (h) {
-      return '<li><span class="t">' + esc(h.title) + '</span><span class="y">' + esc(h.year) + '</span><span class="tm">' + esc(h.team) + "</span></li>";
+    // Milan trophies first and highlighted: the site is about him as a Milan player
+    var hon = D.honours.slice().sort(function (a, b) { return (/milan/i.test(b.team) ? 1 : 0) - (/milan/i.test(a.team) ? 1 : 0); });
+    $("honours").innerHTML = hon.map(function (h) {
+      return '<li' + (/milan/i.test(h.team) ? ' class="milan"' : "") + '><span class="t">' + esc(h.title) + '</span><span class="y">' + esc(h.year) + '</span><span class="tm">' + esc(h.team) + "</span></li>";
     }).join("");
     $("updated").textContent = t("foot.updated", { date: dateStr(D.updated) });
     $("sources").innerHTML = D.sources.map(function (s) { return '<li><a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.name) + "</a></li>"; }).join("");
