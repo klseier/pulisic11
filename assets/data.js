@@ -208,7 +208,7 @@ window.SITE_DATA = {
 
   // goal/assist banners (48 h). The updater adds these itself; a hand-made one is only needed when the automatic check missed it.
   events: [
-    { team: "usa", g: 2, a: 0, total: 35, at: "2026-11-15T00:00:00Z" }, // brace vs Haiti, CONCACAF Nations League QF 1st leg
+    { team: "usa", g: 2, a: 0, total: 35, at: "2026-11-14T23:20:00Z" }, // brace vs Haiti, CONCACAF Nations League QF 1st leg
   ],
 
   honours: [
