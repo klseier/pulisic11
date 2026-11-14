@@ -73,6 +73,7 @@
     if (live.clubStats && live.clubStats.milanTotals) D.clubStats.milanTotals = live.clubStats.milanTotals;
     if (live.intl && live.intl.caps) { D.player.caps = live.intl.caps; D.player.intlGoals = live.intl.goals; D.player.intlAsOf = live.intl.asOf; }
     if (live.pulisicLog) D.pulisicLog = live.pulisicLog;
+    if (live.events) D.events = (D.events || []).concat(live.events);
     if (live.goals && live.goals.list && live.goals.list.length) {
       // the hand-checked archive in data.js is authoritative; the feed only adds matches played after it
       // (and fills in a minute when the archive has none for that match)
@@ -393,6 +394,36 @@
     $("heroCardLikes").textContent = pick.likes != null ? "♥ " + num(pick.likes) : "";
   }
 
+  /* banner for a goal or assist in the last 48 hours (Milan from the Serie A feed, USA from Wikipedia's goal count) */
+  function renderHeroEvent() {
+    var el = $("heroEvent");
+    if (!el) return;
+    var ev = (D.events || []).filter(function (e) { var age = Date.now() - Date.parse(e.at); return age >= 0 && age < 2 * 864e5; })
+      .sort(function (a, b) { return Date.parse(b.at) - Date.parse(a.at); })[0];
+    if (!ev) { el.hidden = true; return; }
+    var who = ev.team === "usa" ? "USA" : "Milan", parts = [], meta = [];
+    function short(d) { return new Date(d + "T12:00:00Z").toLocaleDateString(lang === "it" ? "it-IT" : "en-GB", { day: "numeric", month: "short", timeZone: "UTC" }); }
+    if (ev.g) parts.push(ev.g >= 3 ? t("ev.hat") : ev.g === 2 ? t("ev.brace") : t("ev.goal"));
+    if (ev.a) parts.push(ev.a > 1 ? t("ev.assists", { n: ev.a }) : t("ev.assist"));
+    if (!parts.length) { el.hidden = true; return; }
+    var title = parts.join(" + ") + " " + t("ev.for", { team: who });
+    if (ev.team === "usa") {
+      var at = Date.parse(ev.at), fx = D.fixtures.filter(function (f) {
+        var k = Date.parse(f.date); return f.team === "usa" && k <= at && k > at - 4 * 864e5;
+      }).sort(function (a, b) { return Date.parse(b.date) - Date.parse(a.date); })[0];
+      if (fx) meta.push(short(fx.date.slice(0, 10)), t("ev.vs", { opp: /usa/i.test(fx.home) ? fx.away : fx.home }));
+      else meta.push(short(ev.at.slice(0, 10)));
+      if (ev.total) meta.push(t("ev.usTotal", { n: ev.total }));
+    } else {
+      meta.push(short(ev.date), ev.home + " – " + ev.away + (ev.score ? " " + ev.score : ""));
+    }
+    el.className = "hero-event " + (ev.team === "usa" ? "usa" : "milan");
+    $("heroEventTitle").textContent = title;
+    $("heroEventMeta").textContent = meta.join(" · ");
+    el.href = ev.team === "usa" ? "#profile" : "#goals";
+    el.hidden = false;
+  }
+
   /* "new post" ribbon: shown while the fan page's newest post is under 24h old */
   function postTime(p) { return Date.parse(p.ts || (p.date + "T12:00:00Z")); }
   function agoStr(ms) {
@@ -613,7 +644,7 @@
   }
 
   function renderFan() {
-    renderFanHead(); renderFanKpis(); renderFanFeed(); renderLikesChart(); renderHeroCard(); renderHeroNew();
+    renderFanHead(); renderFanKpis(); renderFanFeed(); renderLikesChart(); renderHeroCard(); renderHeroEvent(); renderHeroNew();
     lineChart("fanFollowersChart", "fanFollowersTable", "fanFollowersNote", sortedHistory(D.fanPage));
   }
 

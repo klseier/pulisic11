@@ -206,6 +206,11 @@ window.SITE_DATA = {
     { years: "2023–", club: "AC Milan", country: "IT" },
   ],
 
+  // goal/assist banners (48 h). The updater adds these itself; a hand-made one is only needed when the automatic check missed it.
+  events: [
+    { team: "usa", g: 2, a: 0, total: 35, at: "2026-11-15T00:00:00Z" }, // brace vs Haiti, CONCACAF Nations League QF 1st leg
+  ],
+
   honours: [
     { year: "2017", title: "DFB-Pokal", team: "Borussia Dortmund" },
     { year: "2021", title: "UEFA Champions League", team: "Chelsea" },

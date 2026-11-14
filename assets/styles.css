@@ -663,3 +663,24 @@ td.pts { font-weight: 700; }
 .ach-head > span:first-child { white-space: nowrap; }
 .ach-cup { letter-spacing: .03em; font-size: .6rem; padding: .2rem .4rem; }
 @media (max-width: 560px) { .cup-yr { display: none; } }
+
+/* ---------- Hero: goal / assist banner (48 h) above the top-post card ---------- */
+.hero-event {
+  display: flex; align-items: center; gap: .7rem; padding: .55rem 1rem .55rem .55rem; border-radius: 10px;
+  color: #fff; text-decoration: none; max-width: 22rem; animation: hnIn .5s cubic-bezier(.2,.8,.2,1) both;
+  box-shadow: 0 10px 24px -14px rgba(35,31,32,.7);
+}
+.hero-event.milan { background: var(--nero); border-left: 5px solid var(--rosso); }
+.hero-event.usa { background: #1F3566; border-left: 5px solid var(--rosso); }
+.he-mark { width: 2.4rem; height: 2.4rem; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center; }
+.hero-event.milan .he-mark { background: repeating-linear-gradient(90deg, var(--rosso) 0 7px, var(--nero) 7px 11px); box-shadow: 0 0 0 2px #fff; }
+.hero-event.usa .he-mark { background: #fff; color: #1F3566; }
+.hero-event.usa .he-mark::before { content: "★"; font-size: 1.25rem; line-height: 1; }
+.he-text { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.he-text b { font: 800 1.05rem/1.1 var(--display); text-transform: uppercase; letter-spacing: .03em; }
+.he-text span { font-size: .78rem; color: rgba(255,255,255,.78); margin-top: .15rem; }
+@media (prefers-reduced-motion: reduce) { .hero-event { animation: none; } }
+@media (max-width: 900px) { .hero-event { flex: 0 0 100%; max-width: none; order: 0; margin-bottom: .25rem; } }
+.hero-event { min-width: 19rem; }
+.he-text b { white-space: nowrap; }
+@media (max-width: 900px) { .hero-event { min-width: 0; } }
