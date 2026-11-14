@@ -365,6 +365,8 @@ if (!live.wiki?.at || manual || Date.now() - Date.parse(live.wiki.at) > WIKI_EVE
         e.g += Math.max(0, dg); e.a += Math.max(0, da);
         live.pulisicLog[lastMatch.date] = e;
         console.log(`Pulisic +${Math.max(0, dg)} G, +${Math.max(0, da)} A credited to ${lastMatch.home}–${lastMatch.away} (${lastMatch.date})`);
+        live.events = (live.events || []).concat([{ team: "milan", g: Math.max(0, dg), a: Math.max(0, da), date: lastMatch.date,
+          home: lastMatch.home, away: lastMatch.away, score: lastMatch.score, at: new Date().toISOString() }]);
         if (dg > 0) {
           // new goal(s): add the match to the goals list; minutes from the match details if the feed provides them
           let minutes = [];
@@ -400,7 +402,16 @@ if (!live.wiki?.at || manual || Date.now() - Date.parse(live.wiki.at) > WIKI_EVE
 
   const elTable = A.europaLeague || live.wiki?.europaLeague;
   if (elTable) { live.standings = live.standings || {}; live.standings.europaLeague = elTable; }
-  if (live.wiki?.usa) live.intl = live.wiki.usa;
+  if (live.wiki?.usa) {
+    // goals for the USA went up since the last Wikipedia read: remember it as an event for the hero banner
+    const before = live.intl?.goals, after = live.wiki.usa.goals, d = after - before;
+    if (before != null && d >= 1 && d <= 5) {
+      live.events = (live.events || []).concat([{ team: "usa", g: d, a: 0, total: after, at: new Date().toISOString() }]);
+      console.log(`USA: +${d} goal(s) for Pulisic (now ${after}) — banner shown for 48 h`);
+    }
+    live.intl = live.wiki.usa;
+  }
+  live.events = (live.events || []).filter((e) => Date.now() - Date.parse(e.at) < 7 * 864e5);
   delete live.news;
   const goalList = [...(live.wiki?.goals?.list || []), ...(live.autoGoals || [])];
   if (goalList.length) live.goals = { list: goalList, asOf: today };
