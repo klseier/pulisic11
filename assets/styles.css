@@ -684,3 +684,17 @@ td.pts { font-weight: 700; }
 .hero-event { min-width: 19rem; }
 .he-text b { white-space: nowrap; }
 @media (max-width: 900px) { .hero-event { min-width: 0; } }
+/* the banners above the top-post card must not widen its column (that pushed the card sideways):
+   inline-size containment keeps them out of the column's width; negative margins let them reach ~17rem, centred on the card */
+@media (min-width: 901px) {
+  .hero-cardcol { align-items: stretch; }
+  .hero-cardcol > .hero-card { align-self: center; }
+  .hero-cardcol > .hero-event, .hero-cardcol > .hero-new {
+    contain: inline-size; width: auto; min-width: 0; max-width: none; box-sizing: border-box;
+    margin-inline: min(0px, calc((100% - 17.5rem) / 2));
+  }
+  .hero-cardcol > .hero-new { align-self: center; margin-inline: 0; contain: none; }
+}
+.hn-text b { white-space: nowrap; }
+@media (min-width: 901px) { .hero-cardcol { gap: .7rem; } .hero-cardcol > .hero-card { margin-top: .3rem; } }
+@media (min-width: 901px) { .hero-cardcol > .hero-new { contain: inline-size; width: 12.5rem; margin-inline: min(0px, calc((100% - 12.5rem) / 2)); align-self: stretch; width: auto; } }
