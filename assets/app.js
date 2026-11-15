@@ -395,12 +395,102 @@
   }
 
   /* banner for a goal or assist in the last 48 hours (Milan from the Serie A feed, USA from Wikipedia's goal count) */
+  /* Where the goal banner and the "On this day" tile go:
+     ≥1280px  the slot next to the 11 holds the goal tile if there is one, otherwise "On this day";
+     901–1279 the goal banner sits above the top-post card and "On this day" is left out (no room);
+     ≤900     the goal banner is a strip at the top and "On this day" takes the empty space beside the 11. */
+  var MQ_WIDE = window.matchMedia ? window.matchMedia("(min-width: 1280px)") : null;
+  var MQ_MOBILE = window.matchMedia ? window.matchMedia("(max-width: 900px)") : null;
+  function placeHeroSlots() {
+    var ev = $("heroEvent"), otd = $("heroOtd"), num = document.querySelector(".hero-num-col"), col = document.querySelector(".hero-cardcol");
+    if (!ev || !num || !col) return;
+    var wide = MQ_WIDE && MQ_WIDE.matches, mobile = MQ_MOBILE && MQ_MOBILE.matches, hasEv = !ev.hidden;
+    var evHome = wide ? num : col;
+    if (ev.parentNode !== evHome) evHome.insertBefore(ev, evHome.firstChild);
+    if (otd) otd.classList.toggle("otd-off", !otdItems.length || (wide && hasEv) || (!wide && !mobile));
+  }
+  [MQ_WIDE, MQ_MOBILE].forEach(function (mq) {
+    if (mq) (mq.addEventListener ? mq.addEventListener("change", placeHeroSlots) : mq.addListener(placeHeroSlots));
+  });
+
+  /* "On this day": curated milestones + every Milan goal, matched on today's month and day */
+  var otdItems = [], otdIdx = 0, otdTimer = null;
+  function otdPool() {
+    var pool = (D.history || []).map(function (h) { return { d: h.d, t: h.t, text: h[lang] || h.en }; });
+    var seen = {};
+    pool.forEach(function (h) { seen[h.d] = true; });
+    var ast = {};
+    ((D.assists && D.assists.list) || []).forEach(function (a) { ast[a.date] = a; });
+    ((D.goals && D.goals.list) || []).forEach(function (g) {
+      if (seen[g.date]) return;
+      var n = goalCount(g), opp = /milan/i.test(g.home) ? g.away : g.home, a = ast[g.date];
+      var text = t(n >= 3 ? "otd.hat" : n === 2 ? "otd.brace" : "otd.goal", { opp: opp }) + (g.minutes && g.minutes.length ? " (" + g.minutes.join(", ") + ")" : "");
+      if (a) text += t(a.n > 1 ? "otd.andAst2" : "otd.andAst");
+      seen[g.date] = true;
+      pool.push({ d: g.date, t: "milan", text: text });
+    });
+    Object.keys(ast).forEach(function (d) {
+      if (seen[d]) return;
+      var a = ast[d];
+      pool.push({ d: d, t: "milan", text: t(a.n > 1 ? "otd.assist2" : "otd.assist", { opp: a.opp }) });
+    });
+    return pool;
+  }
+  function renderOtd() {
+    var el = $("heroOtd");
+    if (!el) return;
+    var now = new Date(), y = now.getFullYear(), pool = otdPool();
+    function md(dt) { return (dt.getMonth() + 1) * 100 + dt.getDate(); }
+    var today = md(now), week = false;
+    var items = pool.filter(function (h) { return +h.d.slice(0, 4) < y && +h.d.slice(5, 7) * 100 + +h.d.slice(8, 10) === today; });
+    if (!items.length) {
+      // nothing on this exact day: the closest date within three days either side
+      for (var k = 1; k <= 3 && !items.length; k++) {
+        [-k, k].forEach(function (off) {
+          if (items.length) return;
+          var dd = new Date(now.getTime() + off * 864e5), m = md(dd);
+          items = pool.filter(function (h) { return +h.d.slice(0, 4) < y && +h.d.slice(5, 7) * 100 + +h.d.slice(8, 10) === m; });
+        });
+      }
+      week = items.length > 0;
+    }
+    items.sort(function (a, b) { return a.d < b.d ? 1 : -1; });
+    otdItems = items; otdIdx = 0;
+    if (otdTimer) { clearInterval(otdTimer); otdTimer = null; }
+    if (!items.length) { el.hidden = true; placeHeroSlots(); return; }
+    $("otdLabel").textContent = week ? t("otd.week") : t("otd.today");
+    el.dataset.week = week ? "1" : "";
+    $("otdDots").innerHTML = items.length > 1 ? items.map(function () { return "<i></i>"; }).join("") : "";
+    showOtd(0, false);
+    el.hidden = false;
+    placeHeroSlots();
+    if (items.length > 1) otdTimer = setInterval(function () { showOtd((otdIdx + 1) % otdItems.length, true); }, 6000);
+  }
+  function fillOtd(i) {
+    var h = otdItems[i], yrs = new Date().getFullYear() - +h.d.slice(0, 4);
+    var el = $("heroOtd");
+    el.className = el.className.replace(/\botd-t-\w+/g, "").trim() + " otd-t-" + h.t;
+    $("otdYear").textContent = $("heroOtd").dataset.week ? dateStr(h.d) : h.d.slice(0, 4);
+    $("otdAgo").textContent = yrs === 1 ? t("otd.ago1") : t("otd.ago", { n: yrs });
+    $("otdText").textContent = h.text; $("heroOtd").title = h.text;
+    [].forEach.call($("otdDots").children, function (d, k) { d.className = k === i ? "on" : ""; });
+  }
+  function showOtd(i, animate) {
+    otdIdx = i;
+    var face = $("otdFace"), reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!animate || reduce) { fillOtd(i); return; }
+    // flip: the face turns away, the next event is written on its back, it turns back in
+    face.classList.add("flip-out");
+    setTimeout(function () { fillOtd(i); face.classList.remove("flip-out"); face.classList.add("flip-in");
+      setTimeout(function () { face.classList.remove("flip-in"); }, 360); }, 340);
+  }
+
   function renderHeroEvent() {
     var el = $("heroEvent");
     if (!el) return;
     var ev = (D.events || []).filter(function (e) { var age = Date.now() - Date.parse(e.at); return age >= 0 && age < 2 * 864e5; })
       .sort(function (a, b) { return Date.parse(b.at) - Date.parse(a.at); })[0];
-    if (!ev) { el.hidden = true; return; }
+    if (!ev) { el.hidden = true; placeHeroSlots(); return; }
     var who = ev.team === "usa" ? "USA" : "Milan", parts = [], meta = [];
     function short(d) { return new Date(d + "T12:00:00Z").toLocaleDateString(lang === "it" ? "it-IT" : "en-GB", { day: "numeric", month: "short", timeZone: "UTC" }); }
     if (ev.g) parts.push(ev.g >= 3 ? t("ev.hat") : ev.g === 2 ? t("ev.brace") : t("ev.goal"));
@@ -423,6 +513,7 @@
     $("heroEventMeta").textContent = meta.join(" · ");
     el.href = ev.team === "usa" ? "#profile" : "#goals";
     el.hidden = false;
+    placeHeroSlots();
   }
 
   /* "new post" ribbon: shown while the fan page's newest post is under 24h old */
@@ -645,7 +736,7 @@
   }
 
   function renderFan() {
-    renderFanHead(); renderFanKpis(); renderFanFeed(); renderLikesChart(); renderHeroCard(); renderHeroEvent(); renderHeroNew();
+    renderFanHead(); renderFanKpis(); renderFanFeed(); renderLikesChart(); renderHeroCard(); renderHeroEvent(); renderHeroNew(); renderOtd();
     lineChart("fanFollowersChart", "fanFollowersTable", "fanFollowersNote", sortedHistory(D.fanPage));
   }
 
