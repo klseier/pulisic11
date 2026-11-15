@@ -399,15 +399,20 @@
      ≥1280px  the slot next to the 11 holds the goal tile if there is one, otherwise "On this day";
      901–1279 the goal banner sits above the top-post card and "On this day" is left out (no room);
      ≤900     the goal banner is a strip at the top and "On this day" takes the empty space beside the 11. */
-  var MQ_WIDE = window.matchMedia ? window.matchMedia("(min-width: 1280px)") : null;
+  var MQ_WIDE = window.matchMedia ? window.matchMedia("(min-width: 1080px)") : null;
   var MQ_MOBILE = window.matchMedia ? window.matchMedia("(max-width: 900px)") : null;
   function placeHeroSlots() {
     var ev = $("heroEvent"), otd = $("heroOtd"), num = document.querySelector(".hero-num-col"), col = document.querySelector(".hero-cardcol");
     if (!ev || !num || !col) return;
     var wide = MQ_WIDE && MQ_WIDE.matches, mobile = MQ_MOBILE && MQ_MOBILE.matches, hasEv = !ev.hidden;
-    // the goal pill always sits above the top post; the space beside the 11 belongs to "On this day"
-    if (ev.parentNode !== col) col.insertBefore(ev, col.firstChild);
+    // 1080px and up: fresh goal and "On this day" share the space beside the 11 (goal on top);
+    // narrower screens: the goal pill sits above the top post
+    if (wide) { if (ev.parentNode !== num || ev.nextElementSibling !== otd) num.insertBefore(ev, otd || num.firstChild); }
+    else if (ev.parentNode !== col) col.insertBefore(ev, col.firstChild);
     if (otd) otd.classList.toggle("otd-off", !otdItems.length);
+    var showOtd = otd && !otd.hidden && otdItems.length;
+    num.classList.toggle("side-two", wide && hasEv && !!showOtd);
+    if (showOtd) fitOtdText();
   }
   [MQ_WIDE, MQ_MOBILE].forEach(function (mq) {
     if (mq) (mq.addEventListener ? mq.addEventListener("change", placeHeroSlots) : mq.addListener(placeHeroSlots));
@@ -474,7 +479,19 @@
     $("otdAgo").textContent = yrs === 1 ? t("otd.ago1") : t("otd.ago", { n: yrs });
     $("otdText").textContent = h.text; $("heroOtd").title = h.text;
     [].forEach.call($("otdDots").children, function (d, k) { d.className = k === i ? "on" : ""; });
+    fitOtdText();
   }
+  // as many lines of text as the tile has room for (the tile's height is set by the 11, not by its text)
+  function fitOtdText() {
+    var tx = $("otdText"), face = $("otdFace");
+    if (!tx || !face) return;
+    tx.style.webkitLineClamp = "";
+    if (!tx.offsetParent || getComputedStyle($("heroOtd")).contain.indexOf("strict") < 0 && !/side-two/.test(($("heroOtd").parentNode || {}).className || "")) return;
+    var lh = parseFloat(getComputedStyle(tx).lineHeight) || 14;
+    var room = face.getBoundingClientRect().bottom - tx.getBoundingClientRect().top;
+    tx.style.webkitLineClamp = String(Math.max(1, Math.floor((room + 1) / lh)));
+  }
+  window.addEventListener("resize", function () { if (otdItems.length) fitOtdText(); });
   function showOtd(i, animate) {
     otdIdx = i;
     var face = $("otdFace"), reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
