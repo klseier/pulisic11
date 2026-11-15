@@ -405,9 +405,9 @@
     var ev = $("heroEvent"), otd = $("heroOtd"), num = document.querySelector(".hero-num-col"), col = document.querySelector(".hero-cardcol");
     if (!ev || !num || !col) return;
     var wide = MQ_WIDE && MQ_WIDE.matches, mobile = MQ_MOBILE && MQ_MOBILE.matches, hasEv = !ev.hidden;
-    var evHome = wide ? num : col;
-    if (ev.parentNode !== evHome) evHome.insertBefore(ev, evHome.firstChild);
-    if (otd) otd.classList.toggle("otd-off", !otdItems.length || (wide && hasEv) || (!wide && !mobile));
+    // the goal pill always sits above the top post; the space beside the 11 belongs to "On this day"
+    if (ev.parentNode !== col) col.insertBefore(ev, col.firstChild);
+    if (otd) otd.classList.toggle("otd-off", !otdItems.length);
   }
   [MQ_WIDE, MQ_MOBILE].forEach(function (mq) {
     if (mq) (mq.addEventListener ? mq.addEventListener("change", placeHeroSlots) : mq.addListener(placeHeroSlots));

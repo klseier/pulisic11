@@ -695,9 +695,18 @@ td.pts { font-weight: 700; }
   }
   .hero-cardcol > .hero-new { align-self: center; margin-inline: 0; contain: none; }
 }
+/* desktop: the goal pill and the NEW POST pill are exactly as wide as the top-post card and centred on it,
+   so they never reach the "On this day" tile beside the 11; long text wraps onto a second line */
+@media (min-width: 901px) {
+  .hero-cardcol > .hero-event, .hero-cardcol > .hero-new {
+    contain: none; box-sizing: border-box; align-self: center; margin-inline: 0;
+    width: calc(clamp(9.5rem, 15vw, 15rem) + 1.1rem + 2px); min-width: 0; max-width: none;
+  }
+  .hero-cardcol > .hero-event { padding-right: .8rem; }
+  .hero-cardcol > .hero-event .he-text b { white-space: normal; }
+}
 .hn-text b { white-space: nowrap; }
 @media (min-width: 901px) { .hero-cardcol { gap: .7rem; } .hero-cardcol > .hero-card { margin-top: .3rem; } }
-@media (min-width: 901px) { .hero-cardcol > .hero-new { contain: inline-size; width: 12.5rem; margin-inline: min(0px, calc((100% - 12.5rem) / 2)); align-self: stretch; width: auto; } }
 /* event banner as a pill, like "New post" */
 .hero-event { border-radius: 999px; border-left: 0 !important; padding: .35rem 1.1rem .35rem .35rem; }
 .hero-event .he-mark { width: 2.6rem; height: 2.6rem; box-shadow: 0 0 0 2px var(--rosso) !important; }
@@ -758,7 +767,7 @@ td.pts { font-weight: 700; }
 /* wide screens: the number column is a small grid — [goal tile][11] on top, the badge across the bottom.
    The grid is there with or without a goal, so the badge never jumps when a tile appears;
    the tile's left edge lines up with the badge and its bottom with the foot of the 11. */
-@media (min-width: 1280px) {
+@media (min-width: 1080px) {
   .hero-num-col { display: grid; grid-template-columns: minmax(8.25rem, 1fr) auto; column-gap: .75rem; row-gap: .7rem; align-items: end; }
   .hero-num-col > .hero-numwrap { grid-column: 2; grid-row: 1; }
   .hero-num-col > .hero-ach { grid-column: 1 / -1; grid-row: 2; justify-self: stretch; max-width: none; width: auto; }
@@ -794,12 +803,12 @@ td.pts { font-weight: 700; }
 @keyframes otdIn { from { transform: rotateX(-90deg); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .otd-face.flip-out, .otd-face.flip-in { transition: none; animation: none; } }
 
-/* wide screens: same slot as the goal tile (left of the 11), shown when there is no goal to announce */
-@media (min-width: 1280px) {
+/* 1080px and up: "On this day" sits left of the 11; the goal pill stays above the top post */
+@media (min-width: 1080px) {
   .hero-num-col > .hero-otd { grid-column: 1; grid-row: 1; align-self: end; justify-self: stretch; }
 }
-/* 901–1279: no room beside the 11 */
-@media (min-width: 901px) and (max-width: 1279px) { .hero-otd { display: none; } }
+@media (min-width: 901px) and (max-width: 1079px) { .hero-otd { display: none; } }
+/* 901–1079: no room beside the 11 */
 /* phones: the empty space to the right of the 11 */
 @media (max-width: 900px) {
   .hero-num-col:has(> .hero-otd:not([hidden]):not(.otd-off)) { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: .7rem; row-gap: .6rem; align-items: end; }
