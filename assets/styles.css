@@ -809,7 +809,7 @@ td.pts { font-weight: 700; }
   .hero-num-col.side-two > .hero-otd[data-week="1"] .otd-year { font-size: 1rem; }
   .hero-num-col.side-two > .hero-otd .otd-ago { font-size: .6rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .hero-num-col.side-two > .hero-otd .otd-text { grid-column: 1 / -1; font-size: .7rem; line-height: 1.25; -webkit-line-clamp: 2; }
-  .hero-num-col.side-two > .hero-otd .otd-label { font-size: .55rem; }
+  .hero-num-col.side-two > .hero-otd .otd-label { font-size: .55rem; letter-spacing: .06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .hero-num-col.side-two > .hero-otd[data-week="1"] .otd-ago { display: none; }
   .hero-num-col.side-two > .hero-otd .otd-dots { margin-top: 0; }
 

@@ -508,7 +508,7 @@
     var ev = (D.events || []).filter(function (e) { var age = Date.now() - Date.parse(e.at); return age >= 0 && age < 2 * 864e5; })
       .sort(function (a, b) { return Date.parse(b.at) - Date.parse(a.at); })[0];
     if (!ev) { el.hidden = true; placeHeroSlots(); return; }
-    var who = ev.team === "usa" ? "USA" : "Milan", parts = [], meta = [];
+    var who = t(ev.team === "usa" ? "ev.usa" : "ev.milan"), parts = [], meta = [];
     function short(d) { return new Date(d + "T12:00:00Z").toLocaleDateString(lang === "it" ? "it-IT" : "en-GB", { day: "numeric", month: "short", timeZone: "UTC" }); }
     if (ev.g) parts.push(ev.g >= 3 ? t("ev.hat") : ev.g === 2 ? t("ev.brace") : t("ev.goal"));
     if (ev.a) parts.push(ev.a > 1 ? t("ev.assists", { n: ev.a }) : t("ev.assist"));
