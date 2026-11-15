@@ -417,7 +417,8 @@
     } else {
       meta.push(short(ev.date), ev.home + " – " + ev.away + (ev.score ? " " + ev.score : ""));
     }
-    el.className = "hero-event " + (ev.team === "usa" ? "usa" : "milan");
+    // "fresh" for the first 6 hours: the mark ripples like a ball hitting the net
+    el.className = "hero-event " + (ev.team === "usa" ? "usa" : "milan") + (Date.now() - Date.parse(ev.at) < 6 * 3600e3 ? " fresh" : "");
     $("heroEventTitle").textContent = title;
     $("heroEventMeta").textContent = meta.join(" · ");
     el.href = ev.team === "usa" ? "#profile" : "#goals";

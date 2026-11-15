@@ -698,3 +698,37 @@ td.pts { font-weight: 700; }
 .hn-text b { white-space: nowrap; }
 @media (min-width: 901px) { .hero-cardcol { gap: .7rem; } .hero-cardcol > .hero-card { margin-top: .3rem; } }
 @media (min-width: 901px) { .hero-cardcol > .hero-new { contain: inline-size; width: 12.5rem; margin-inline: min(0px, calc((100% - 12.5rem) / 2)); align-self: stretch; width: auto; } }
+/* event banner as a pill, like "New post" */
+.hero-event { border-radius: 999px; border-left: 0 !important; padding: .35rem 1.1rem .35rem .35rem; }
+.hero-event .he-mark { width: 2.6rem; height: 2.6rem; box-shadow: 0 0 0 2px var(--rosso) !important; }
+.hero-event.usa .he-mark { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--rosso) !important; }
+@media (min-width: 901px) { .hero-cardcol > .hero-event { padding-right: 1.1rem; } }
+
+/* fresh goal (first 6 h): a ball flies into the mark, the "net" shakes and sends out rings, then rests. 4 s cycle. */
+.hero-event .he-mark { position: relative; }
+.he-ball { position: absolute; left: 50%; top: 50%; margin: -8px 0 0 -8px; opacity: 0; pointer-events: none; }
+.hero-event.fresh .he-ball { animation: heBall 4s cubic-bezier(.3,.7,.4,1) infinite; }
+.hero-event.fresh .he-mark { animation: heShake 4s ease-out infinite; }
+.hero-event.fresh .he-mark::after {
+  content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  animation: heNet 4s ease-out infinite;
+}
+@keyframes heBall {
+  0% { opacity: 0; transform: translate(-46px, 14px) rotate(-420deg) scale(.8); }
+  3% { opacity: 1; }
+  15% { opacity: 1; transform: translate(0, 0) rotate(0) scale(1); }
+  19% { opacity: 1; transform: scale(1.35); }
+  27%, 100% { opacity: 0; transform: scale(1.6); }
+}
+@keyframes heShake {
+  0%, 15%, 32%, 100% { transform: none; }
+  18% { transform: translateX(3px) scale(1.08); }
+  22% { transform: translateX(-2px) scale(1.05); }
+  26% { transform: translateX(1px) scale(1.02); }
+}
+@keyframes heNet {
+  0%, 15% { box-shadow: 0 0 0 0 rgba(255,75,95,0), 0 0 0 0 rgba(255,255,255,0); }
+  16% { box-shadow: 0 0 0 0 rgba(255,75,95,.9), 0 0 0 0 rgba(255,255,255,.7); }
+  50%, 100% { box-shadow: 0 0 0 20px rgba(255,75,95,0), 0 0 0 10px rgba(255,255,255,0); }
+}
+@media (prefers-reduced-motion: reduce) { .hero-event.fresh .he-mark, .hero-event.fresh .he-mark::after, .hero-event.fresh .he-ball { animation: none; } }
