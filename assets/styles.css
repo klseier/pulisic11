@@ -885,3 +885,44 @@ td.pts { font-weight: 700; }
   .hero-otd .otd-text { grid-column: 1 / -1; font-size: .7rem; }
   .hero-otd .otd-ago { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
+/* phones: the top-post card always stays beside the 11 / "On this day" / badge column instead of dropping below it;
+   the column takes whatever width the card leaves */
+@media (max-width: 900px) {
+  .hero-art > .hero-num-col, .hero-cardcol > .hero-num-col, .hero-num-col { flex: 1 1 0; min-width: 0; }
+  .hero-num-col .hero-ach { max-width: none; width: 100%; box-sizing: border-box; }
+}
+/* narrow phones: the trophy chip drops under "For AC Milan" instead of being cut off */
+@media (max-width: 400px) {
+  .ach-head { flex-wrap: wrap; row-gap: .35rem; }
+}
+
+/* "On this day" text in a fixed window (phones, and beside the goal on desktop): whole lines only;
+   a longer text scrolls slowly up instead of being cut off with "…" */
+.otd-text.otd-fit { display: block; -webkit-line-clamp: unset; overflow: hidden; }
+.otd-text > span { display: block; }
+.otd-text.otd-roll { -webkit-mask-image: linear-gradient(transparent 0, #000 .15em, #000 calc(100% - .4em), transparent 100%);
+  mask-image: linear-gradient(transparent 0, #000 .15em, #000 calc(100% - .4em), transparent 100%); }
+@keyframes otdRoll {
+  0%, 22% { transform: translateY(0); }
+  80%, 100% { transform: translateY(var(--roll)); }
+}
+/* phones: with a full date ("18 Nov 2024") the "N years ago" note only gets cut off — leave it out */
+@media (max-width: 900px) { .hero-otd[data-week="1"] .otd-ago { display: none; } }
+
+/* ---------- hidden "On this day" → story: press and hold the tile ---------- */
+.hero-otd { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; transition: transform .7s ease-out; }
+.hero-otd.otd-press { transform: scale(.96); }
+.story-open, .story-open body { overflow: hidden; }
+.story-sheet { position: fixed; inset: 0; z-index: 1000; background: rgba(20,18,19,.86); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); display: grid; place-items: center; padding: 1rem;
+  animation: storyIn .2s ease-out; }
+.story-box { position: relative; display: flex; flex-direction: column; align-items: center; gap: .9rem; max-height: 100%; }
+.story-img { display: block; height: min(72vh, 680px); max-width: calc(100vw - 2rem); aspect-ratio: 9 / 16; object-fit: contain;
+  border-radius: 14px; box-shadow: 0 24px 60px -20px rgba(0,0,0,.6); background: #000; }
+.story-btns { display: flex; gap: .6rem; }
+.story-btn { font: 700 .95rem/1 var(--text); padding: .8rem 1.4rem; border-radius: 999px; border: 0; cursor: pointer; text-decoration: none;
+  background: #fff; color: var(--nero); }
+.story-btn.story-go { background: var(--rosso); color: #fff; }
+.story-x { position: absolute; top: -.6rem; right: -.6rem; width: 2.2rem; height: 2.2rem; border-radius: 50%; border: 0; cursor: pointer;
+  background: #fff; color: var(--nero); font: 400 1.5rem/1 var(--text); box-shadow: 0 6px 16px -6px rgba(0,0,0,.5); }
+@keyframes storyIn { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .story-sheet { animation: none; } .hero-otd { transition: none; } }

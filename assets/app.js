@@ -461,7 +461,7 @@
     }
     items.sort(function (a, b) { return a.d < b.d ? 1 : -1; });
     otdItems = items; otdIdx = 0;
-    if (otdTimer) { clearInterval(otdTimer); otdTimer = null; }
+    if (otdTimer) { clearTimeout(otdTimer); otdTimer = null; }
     if (!items.length) { el.hidden = true; placeHeroSlots(); return; }
     $("otdLabel").textContent = week ? t("otd.week") : t("otd.today");
     el.dataset.week = week ? "1" : "";
@@ -469,7 +469,27 @@
     showOtd(0, false);
     el.hidden = false;
     placeHeroSlots();
-    if (items.length > 1) otdTimer = setInterval(function () { showOtd((otdIdx + 1) % otdItems.length, true); }, 6000);
+    if (items.length > 1) scheduleOtd();
+  }
+  var otdPaused = false;
+  window.CP11 = {
+    t: function (k, v) { return t(k, v); },
+    lang: function () { return lang; },
+    locale: function () { return locale(); },
+    otd: function () {
+      var h = otdItems[otdIdx], el = $("heroOtd");
+      if (!h || !el || el.hidden) return null;
+      return { d: h.d, type: h.t, text: h.text, week: !!el.dataset.week, label: $("otdLabel").textContent };
+    },
+    pauseOtd: function (on) { otdPaused = !!on; }
+  };
+  function scheduleOtd() {
+    if (otdTimer) clearTimeout(otdTimer);
+    otdTimer = setTimeout(function () {
+      if (otdPaused) { scheduleOtd(); return; }
+      showOtd((otdIdx + 1) % otdItems.length, true);
+      setTimeout(scheduleOtd, 720);                       // after the flip, when the new text has been measured
+    }, Math.max(6000, otdScrollMs + 400));
   }
   function fillOtd(i) {
     var h = otdItems[i], yrs = new Date().getFullYear() - +h.d.slice(0, 4);
@@ -477,21 +497,52 @@
     el.className = el.className.replace(/\botd-t-\w+/g, "").trim() + " otd-t-" + h.t;
     $("otdYear").textContent = $("heroOtd").dataset.week ? dateStr(h.d) : h.d.slice(0, 4);
     $("otdAgo").textContent = yrs === 1 ? t("otd.ago1") : t("otd.ago", { n: yrs });
-    $("otdText").textContent = h.text; $("heroOtd").title = h.text;
+    $("otdText").innerHTML = "<span>" + esc(h.text) + "</span>"; $("heroOtd").title = h.text;
     [].forEach.call($("otdDots").children, function (d, k) { d.className = k === i ? "on" : ""; });
     fitOtdText();
   }
   // as many lines of text as the tile has room for (the tile's height is set by the 11, not by its text)
+  // the tile's height is set by the 11, not by its text: the text gets as many whole lines as fit,
+  // and if it is longer it scrolls slowly up (like a news ticker) and back down, never cut off
+  var otdScrollMs = 0;
   function fitOtdText() {
-    var tx = $("otdText"), face = $("otdFace");
-    if (!tx || !face) return;
-    tx.style.webkitLineClamp = "";
-    if (!tx.offsetParent || getComputedStyle($("heroOtd")).contain.indexOf("strict") < 0 && !/side-two/.test(($("heroOtd").parentNode || {}).className || "")) return;
+    var tx = $("otdText"), face = $("otdFace"), inner = tx && tx.firstElementChild;
+    otdScrollMs = 0;
+    if (!tx || !face || !inner) return;
+    tx.style.height = ""; tx.style.overflowY = ""; tx.classList.remove("otd-roll", "otd-fit"); inner.style.animation = "";
+    var tile = $("heroOtd");
+    if (!tx.offsetParent || getComputedStyle(tile).contain.indexOf("strict") < 0 && !/side-two/.test((tile.parentNode || {}).className || "")) return;
+    tx.classList.add("otd-fit");
     var lh = parseFloat(getComputedStyle(tx).lineHeight) || 14;
-    var room = face.getBoundingClientRect().bottom - tx.getBoundingClientRect().top;
-    tx.style.webkitLineClamp = String(Math.max(1, Math.floor((room + 1) / lh)));
+    var room = face.offsetTop + face.offsetHeight - tx.offsetTop;   // offsets ignore the flip transform
+    var lines = Math.max(1, Math.floor((room + 1) / lh)), h = lines * lh;
+    tx.style.height = h + "px";
+    var dist = inner.scrollHeight - h;
+    if (dist < 2) return;
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) { tx.style.overflowY = "auto"; return; }
+    var move = Math.max(1600, dist / 16 * 1000);          // ~16 px per second
+    otdScrollMs = 1400 + move + 1600;                      // pause on top, roll, pause at the end
+    tx.style.setProperty("--roll", -Math.ceil(dist + 2) + "px");
+    tx.classList.add("otd-roll");
+    var single = otdItems.length < 2;
+    inner.style.animation = "otdRoll " + Math.round(otdScrollMs + (single ? 900 : 0)) + "ms linear " + (single ? "infinite" : "1 forwards");
   }
   window.addEventListener("resize", function () { if (otdItems.length) fitOtdText(); });
+  if (document.fonts) {
+    var refitOtd = function () { if (otdItems.length) fitOtdText(); };
+    if (document.fonts.ready) document.fonts.ready.then(refitOtd);
+    if (document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", refitOtd);
+  }
+  // and whenever the tile itself changes size (images loading, the column settling, rotating the phone)
+  if (window.ResizeObserver && $("heroOtd")) {
+    var otdRaf = 0, otdSize = "";
+    new ResizeObserver(function (en) {
+      var r = en[0].contentRect, k = Math.round(r.width) + "x" + Math.round(r.height);
+      if (k === otdSize) return; otdSize = k;
+      cancelAnimationFrame(otdRaf); otdRaf = requestAnimationFrame(function () { if (otdItems.length) fitOtdText(); });
+    }).observe($("heroOtd"));
+  }
   function showOtd(i, animate) {
     otdIdx = i;
     var face = $("otdFace"), reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
