@@ -916,9 +916,15 @@ td.pts { font-weight: 700; }
 .story-sheet { position: fixed; inset: 0; z-index: 1000; background: rgba(20,18,19,.86); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); display: grid; place-items: center; padding: 1rem;
   animation: storyIn .2s ease-out; }
 .story-box { position: relative; display: flex; flex-direction: column; align-items: center; gap: .9rem; max-height: 100%; }
-.story-img { display: block; height: min(72vh, 680px); max-width: calc(100vw - 2rem); aspect-ratio: 9 / 16; object-fit: contain;
+.story-img { display: block; height: min(68vh, 660px); max-width: calc(100vw - 2rem); aspect-ratio: 9 / 16; object-fit: contain;
   border-radius: 14px; box-shadow: 0 24px 60px -20px rgba(0,0,0,.6); background: #000; }
-.story-btns { display: flex; gap: .6rem; }
+.story-btns { display: flex; gap: .5rem; flex-wrap: wrap; justify-content: center; }
+canvas.story-img { width: auto; touch-action: none; }
+.story-tip { display: none; margin: -.3rem 0 0; font: .78rem/1.3 var(--text); color: rgba(255,255,255,.75); text-align: center; }
+.story-sheet.has-photo .story-tip { display: block; }
+.story-reset { display: none; }
+.story-sheet.has-photo .story-reset { display: inline-block; }
+.story-pick { display: inline-block; }
 .story-btn { font: 700 .95rem/1 var(--text); padding: .8rem 1.4rem; border-radius: 999px; border: 0; cursor: pointer; text-decoration: none;
   background: #fff; color: var(--nero); }
 .story-btn.story-go { background: var(--rosso); color: #fff; }

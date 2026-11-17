@@ -60,9 +60,23 @@
     return lines;
   }
 
-  function draw(item) {
+  var FRAME = { x: PAD, y: 560, w: W - 2 * PAD, h: 760 };
+  // photo: { img, iw, ih, s (zoom ≥ 1 over "cover"), ox, oy (centre offset in canvas px) }
+  function photoRect(ph) {
+    var cover = Math.max(FRAME.w / ph.iw, FRAME.h / ph.ih), k = cover * ph.s;
+    var dw = ph.iw * k, dh = ph.ih * k;
+    return { w: dw, h: dh, x: FRAME.x + FRAME.w / 2 - dw / 2 + ph.ox, y: FRAME.y + FRAME.h / 2 - dh / 2 + ph.oy };
+  }
+  // keep the photo covering the whole frame: never an empty edge
+  function clampPhoto(ph) {
+    ph.s = Math.min(Math.max(ph.s, 1), 6);
+    var cover = Math.max(FRAME.w / ph.iw, FRAME.h / ph.ih), k = cover * ph.s;
+    var mx = (ph.iw * k - FRAME.w) / 2, my = (ph.ih * k - FRAME.h) / 2;
+    ph.ox = Math.min(Math.max(ph.ox, -mx), mx); ph.oy = Math.min(Math.max(ph.oy, -my), my);
+  }
+  function draw(item, photo, target) {
     var CP = window.CP11, th = THEMES[item.type] || THEMES.career;
-    var cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+    var cv = target || document.createElement("canvas"); cv.width = W; cv.height = H;
     var c = cv.getContext("2d");
     c.fillStyle = th.bg; c.fillRect(0, 0, W, H);
     pattern(c, th, item.pattern || th.patKind);
@@ -90,14 +104,20 @@
     c.fillText((item.week ? CP.t("otd.week") : CP.t("otd.today")) + " · " + agoTxt, PAD, 190 + ds * 0.86 + 70);
 
     // middle: empty frame for a photo or post (fixed position)
-    var fx = PAD, fy = 560, fw = W - 2 * PAD, fh = 760;
+    var fx = FRAME.x, fy = FRAME.y, fw = FRAME.w, fh = FRAME.h;
     c.save(); rr(c, fx, fy, fw, fh, 40); c.clip();
-    c.fillStyle = th.ghost; c.textAlign = "center"; c.textBaseline = "middle";
-    c.font = th.mark === "★" ? "400 460px " + TEXT : "900 560px " + DISPLAY;
-    c.fillText(th.mark, W / 2, fy + fh / 2 + (th.mark === "★" ? 10 : 30));
+    if (photo) {
+      var pr = photoRect(photo);
+      c.imageSmoothingQuality = "high";
+      c.drawImage(photo.img, pr.x, pr.y, pr.w, pr.h);
+    } else {
+      c.fillStyle = th.ghost; c.textAlign = "center"; c.textBaseline = "middle";
+      c.font = th.mark === "★" ? "400 460px " + TEXT : "900 560px " + DISPLAY;
+      c.fillText(th.mark, W / 2, fy + fh / 2 + (th.mark === "★" ? 10 : 30));
+    }
     c.restore();
     c.textAlign = "left"; c.textBaseline = "alphabetic";
-    c.setLineDash([22, 16]); c.lineWidth = 5; c.strokeStyle = th.dash; rr(c, fx, fy, fw, fh, 40); c.stroke(); c.setLineDash([]);
+    if (!photo) { c.setLineDash([22, 16]); c.lineWidth = 5; c.strokeStyle = th.dash; rr(c, fx, fy, fw, fh, 40); c.stroke(); c.setLineDash([]); }
     c.lineWidth = 12; c.strokeStyle = th.corner; c.lineCap = "round";
     var L = 96, r = 40;
     [[fx, fy, 1, 1], [fx + fw, fy, -1, 1], [fx, fy + fh, 1, -1], [fx + fw, fy + fh, -1, -1]].forEach(function (k) {
@@ -130,46 +150,154 @@
     ]).catch(function () {});
   }
 
-  // ---------- preview sheet ----------
-  var sheet = null, blobUrl = null;
+  // ---------- preview sheet: live canvas, optional photo you can drag and pinch inside the frame ----------
+  var sheet = null, blobUrl = null, state = null;
   function close() {
     if (!sheet) return;
     sheet.remove(); sheet = null;
     if (blobUrl) { URL.revokeObjectURL(blobUrl); blobUrl = null; }
+    if (state && state.photoUrl) URL.revokeObjectURL(state.photoUrl);
+    state = null;
     document.documentElement.classList.remove("story-open");
     window.CP11.pauseOtd(false);
+  }
+  // the finished PNG is prepared after every change, so "Share" can hand it over at once (iOS wants that)
+  var exportTimer = null;
+  function scheduleExport() {
+    clearTimeout(exportTimer);
+    if (state) state.ready = false;
+    exportTimer = setTimeout(function () {
+      if (!state) return;
+      var st = state;
+      st.canvas.toBlob(function (blob) {
+        if (!blob || st !== state) return;
+        try { st.file = new File([blob], st.name, { type: "image/png" }); } catch (e) { st.file = null; }
+        if (blobUrl) URL.revokeObjectURL(blobUrl);
+        blobUrl = URL.createObjectURL(blob);
+        var a = sheet && sheet.querySelector("a.story-save");
+        if (a) a.href = blobUrl;
+        st.ready = true;
+      }, "image/png");
+    }, 250);
+  }
+  var raf = 0;
+  function redraw() {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(function () { if (state) { draw(state.item, state.photo, state.canvas); scheduleExport(); } });
+  }
+  function loadPhoto(file) {
+    if (!file || !state) return;
+    var url = URL.createObjectURL(file), img = new Image();
+    img.onload = function () {
+      if (!state) { URL.revokeObjectURL(url); return; }
+      // big camera photos are scaled down once, so moving them stays smooth
+      var iw = img.naturalWidth, ih = img.naturalHeight, src = img, max = 2400;
+      if (Math.max(iw, ih) > max) {
+        var k = max / Math.max(iw, ih), off = document.createElement("canvas");
+        off.width = Math.round(iw * k); off.height = Math.round(ih * k);
+        off.getContext("2d").drawImage(img, 0, 0, off.width, off.height);
+        src = off; iw = off.width; ih = off.height;
+      }
+      if (state.photoUrl) URL.revokeObjectURL(state.photoUrl);
+      state.photoUrl = url;
+      state.photo = { img: src, iw: iw, ih: ih, s: 1, ox: 0, oy: 0 };
+      sheet.classList.add("has-photo");
+      redraw();
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); };
+    img.src = url;
+  }
+  // gestures on the preview: one finger / mouse drags, two fingers or the wheel zoom
+  function bindGestures(cv) {
+    var pts = {}, start = null;
+    function toCanvas(e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height }; }
+    function inFrame(p) { return p.x >= FRAME.x && p.x <= FRAME.x + FRAME.w && p.y >= FRAME.y && p.y <= FRAME.y + FRAME.h; }
+    function snapshot() {
+      var ids = Object.keys(pts), ph = state.photo;
+      if (ids.length === 1) return { mode: 1, p: pts[ids[0]], ox: ph.ox, oy: ph.oy };
+      var a = pts[ids[0]], b = pts[ids[1]];
+      return { mode: 2, d: Math.hypot(a.x - b.x, a.y - b.y) || 1, m: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, s: ph.s, ox: ph.ox, oy: ph.oy };
+    }
+    cv.addEventListener("pointerdown", function (e) {
+      if (!state || !state.photo) return;
+      var p = toCanvas(e);
+      if (!Object.keys(pts).length && !inFrame(p)) return;
+      cv.setPointerCapture(e.pointerId);
+      pts[e.pointerId] = p; start = snapshot();
+      e.preventDefault();
+    });
+    cv.addEventListener("pointermove", function (e) {
+      if (!state || !state.photo || !pts[e.pointerId]) return;
+      pts[e.pointerId] = toCanvas(e);
+      var ph = state.photo, ids = Object.keys(pts);
+      if (start.mode === 1 && ids.length === 1) {
+        var p = pts[ids[0]];
+        ph.ox = start.ox + (p.x - start.p.x); ph.oy = start.oy + (p.y - start.p.y);
+      } else if (start.mode === 2 && ids.length >= 2) {
+        var a = pts[ids[0]], b = pts[ids[1]], d = Math.hypot(a.x - b.x, a.y - b.y) || 1, m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        zoomAround(ph, start, start.s * d / start.d, start.m);
+        ph.ox += m.x - start.m.x; ph.oy += m.y - start.m.y;
+      }
+      clampPhoto(ph); redraw();
+    });
+    function up(e) { if (pts[e.pointerId]) { delete pts[e.pointerId]; start = Object.keys(pts).length ? snapshot() : null; } }
+    cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+    cv.addEventListener("wheel", function (e) {
+      if (!state || !state.photo) return;
+      var p = toCanvas(e); if (!inFrame(p)) return;
+      e.preventDefault();
+      var ph = state.photo, base = { s: ph.s, ox: ph.ox, oy: ph.oy };
+      zoomAround(ph, base, ph.s * Math.exp(-e.deltaY * 0.0015), p);
+      clampPhoto(ph); redraw();
+    }, { passive: false });
+  }
+  // zoom so that the point under the fingers stays where it is
+  function zoomAround(ph, base, s, at) {
+    s = Math.min(Math.max(s, 1), 6);
+    var cx = FRAME.x + FRAME.w / 2, cy = FRAME.y + FRAME.h / 2, f = s / base.s;
+    ph.s = s;
+    ph.ox = (at.x - cx) - (at.x - cx - base.ox) * f;
+    ph.oy = (at.y - cy) - (at.y - cy - base.oy) * f;
   }
   function open() {
     var CP = window.CP11, item = CP && CP.otd();
     if (!item || sheet) return;
     CP.pauseOtd(true);
     fontsReady().then(function () {
-      var cv = draw(item);
-      cv.toBlob(function (blob) {
-        if (!blob) { CP.pauseOtd(false); return; }
-        var name = "pulisic-" + item.d + ".png", file = null;
-        try { file = new File([blob], name, { type: "image/png" }); } catch (e) {}
-        var canShare = !!(file && navigator.canShare && navigator.canShare({ files: [file] }));
-        blobUrl = URL.createObjectURL(blob);
-        sheet = document.createElement("div");
-        sheet.className = "story-sheet";
-        sheet.innerHTML =
-          '<div class="story-box" role="dialog" aria-modal="true">' +
-            '<button class="story-x" type="button" aria-label="' + CP.t("story.close") + '">×</button>' +
-            '<img class="story-img" alt="" src="' + blobUrl + '">' +
-            '<div class="story-btns">' +
-              (canShare ? '<button class="story-btn story-go" type="button">' + CP.t("story.share") + "</button>" : "") +
-              '<a class="story-btn' + (canShare ? "" : " story-go") + '" href="' + blobUrl + '" download="' + name + '">' + CP.t("story.save") + "</a>" +
-            "</div>" +
-          "</div>";
-        document.body.appendChild(sheet);
-        document.documentElement.classList.add("story-open");
-        sheet.addEventListener("click", function (e) { if (e.target === sheet || e.target.classList.contains("story-x")) close(); });
-        var go = sheet.querySelector("button.story-go");
-        if (go) go.addEventListener("click", function () {
-          navigator.share({ files: [file] }).catch(function () {});
-        });
-      }, "image/png");
+      var name = "pulisic-" + item.d + ".png";
+      var canShare = false;
+      try { canShare = !!(navigator.canShare && navigator.canShare({ files: [new File([new Blob(["x"], { type: "image/png" })], name, { type: "image/png" })] })); } catch (e) {}
+      sheet = document.createElement("div");
+      sheet.className = "story-sheet";
+      sheet.innerHTML =
+        '<div class="story-box" role="dialog" aria-modal="true">' +
+          '<button class="story-x" type="button" aria-label="' + CP.t("story.close") + '">×</button>' +
+          '<canvas class="story-img"></canvas>' +
+          '<p class="story-tip">' + CP.t("story.tip") + "</p>" +
+          '<div class="story-btns">' +
+            '<label class="story-btn story-pick">' + CP.t("story.photo") + '<input type="file" accept="image/*" hidden></label>' +
+            '<button class="story-btn story-reset" type="button">' + CP.t("story.reset") + "</button>" +
+            (canShare ? '<button class="story-btn story-go story-share" type="button">' + CP.t("story.share") + "</button>" : "") +
+            '<a class="story-btn story-save' + (canShare ? "" : " story-go") + '" href="#" download="' + name + '">' + CP.t("story.save") + "</a>" +
+          "</div>" +
+        "</div>";
+      document.body.appendChild(sheet);
+      document.documentElement.classList.add("story-open");
+      var cv = sheet.querySelector("canvas");
+      state = { item: item, canvas: cv, photo: null, name: name, file: null, ready: false };
+      draw(item, null, cv); scheduleExport(); bindGestures(cv);
+      sheet.addEventListener("click", function (e) { if (e.target === sheet || e.target.classList.contains("story-x")) close(); });
+      sheet.querySelector("input[type=file]").addEventListener("change", function (e) { loadPhoto(e.target.files && e.target.files[0]); e.target.value = ""; });
+      sheet.querySelector(".story-reset").addEventListener("click", function () {
+        if (!state || !state.photo) return;
+        state.photo.s = 1; state.photo.ox = 0; state.photo.oy = 0; redraw();
+      });
+      sheet.querySelector("a.story-save").addEventListener("click", function (e) { if (!state || !state.ready) e.preventDefault(); });
+      var go = sheet.querySelector(".story-share");
+      if (go) go.addEventListener("click", function () {
+        if (!state || !state.ready || !state.file) return;
+        navigator.share({ files: [state.file] }).catch(function () {});
+      });
     });
   }
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
