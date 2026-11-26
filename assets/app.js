@@ -56,9 +56,15 @@
       // keep hand-written Pulisic notes (assets/data.js) for matches the feed has no note for
       var notes = {};
       D.recentResults.forEach(function (r) { if (r.pulisic) notes[r.date] = r.pulisic; });
-      D.recentResults = live.recentResults.map(function (r) {
+      var fromFeed = live.recentResults.map(function (r) {
         return r.pulisic || !notes[r.date] ? r : Object.assign({}, r, { pulisic: notes[r.date] });
       });
+      // the feed only has Serie A: keep hand-written cup / European results, newest first, same length as the feed
+      var feedDates = {};
+      fromFeed.forEach(function (r) { feedDates[r.date] = true; });
+      var extra = D.recentResults.filter(function (r) { return !/serie a/i.test(r.comp || "") && !feedDates[r.date]; });
+      D.recentResults = fromFeed.concat(extra).sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; })
+        .slice(0, Math.max(fromFeed.length, 5));
     }
     if (live.standings) Object.keys(live.standings).forEach(function (k) { D.standings[k] = live.standings[k]; });
     if (live.clubStats && live.clubStats.currentSeason) {
@@ -632,14 +638,21 @@
   }
 
   /* achievements badge: goals and assists for Milan, with the next round milestone */
+  // matches outside Serie A (cups, Europe) are logged by hand in data.js; the automatic log wins on the same date
+  function withManualLog() {
+    var log = {}, auto = D.pulisicLog || {}, man = D.manualLog || {};
+    Object.keys(man).forEach(function (d) { log[d] = man[d]; });
+    Object.keys(auto).forEach(function (d) { log[d] = auto[d]; });
+    return log;
+  }
   function milanKnownGoals() {
-    var tot = D.clubStats.milanTotals || {}, g = tot.goals || 0, log = D.pulisicLog || {};
+    var tot = D.clubStats.milanTotals || {}, g = tot.goals || 0, log = withManualLog();
     Object.keys(log).forEach(function (d) { if (!tot.asOf || d > tot.asOf) g += log[d].g || 0; });
     return g;
   }
   function milanCareer() {
     var tot = D.clubStats.milanTotals || {}, g = tot.goals || 0, a = tot.assists || 0;
-    var log = D.pulisicLog || {};
+    var log = withManualLog();
     Object.keys(log).forEach(function (d) { if (!tot.asOf || d > tot.asOf) { g += log[d].g || 0; a += log[d].a || 0; } });
     var G = D.goals;
     if (G && !G.partial && G.list) {
@@ -680,7 +693,7 @@
     // this season, all competitions: hand-checked base + Serie A goals/assists the updater credited after it
     var st = D.clubStats.seasonTotals, season = "";
     if (st) {
-      var sg = st.goals || 0, sa = st.assists || 0, slog = D.pulisicLog || {};
+      var sg = st.goals || 0, sa = st.assists || 0, slog = withManualLog();
       Object.keys(slog).forEach(function (d) { if (!st.asOf || d > st.asOf) { sg += slog[d].g || 0; sa += slog[d].a || 0; } });
       season = '<span class="ach-season"><span class="ach-s-label">' + esc(st.label || t("ach.season")) + '</span><span class="ach-s-val"><b>' +
         sg + "</b> " + esc(t("ach.g")) + ' <i aria-hidden="true">·</i> <b>' + sa + "</b> " + esc(t("ach.a")) + "</span></span>";

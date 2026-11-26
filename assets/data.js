@@ -89,6 +89,7 @@ window.SITE_DATA = {
   ],
 
   recentResults: [
+    { comp: "Europa League", home: "Olympiacos", away: "AC Milan", score: "2–4", date: "2026-11-26", pulisic: { en: "Goal (71') + assist", it: "Gol (71') + assist" } },
     { comp: "Serie A", home: "Genoa", away: "AC Milan", score: "1–2", date: "2026-11-08", pulisic: { en: "Goal (19')", it: "Gol (19')" } },
     { comp: "Europa League", home: "AC Milan", away: "Ferencváros", score: "0–2", date: "2026-11-05" },
     { comp: "Serie A", home: "AC Milan", away: "Inter", score: "3–1", date: "2026-10-31", pulisic: { en: "Goal (4')", it: "Gol (4')" } },
@@ -214,6 +215,7 @@ window.SITE_DATA = {
     { d: "2026-07-06", t: "usa", en: "Christian’s World Cup ends in the round of 16: the USA lose 4–1 to Belgium in Seattle", it: "Il Mondiale di Christian finisce agli ottavi: gli USA perdono 4–1 col Belgio a Seattle" },
     { d: "2026-11-14", t: "usa", en: "Pulisic scores twice in a 6–0 win over Haiti: 35 goals, past Eric Wynalda into fourth on the USA’s all-time list", it: "Doppietta di Pulisic nel 6–0 ad Haiti: 35 gol, supera Eric Wynalda ed è quarto nella storia degli USA" },
     { d: "2026-11-17", t: "usa", en: "Pulisic’s overhead-kick goal against Haiti in Mauricio Pochettino’s last game as USA coach", it: "Gol in rovesciata di Pulisic contro Haiti nell'ultima partita di Mauricio Pochettino da ct degli USA" },
+    { d: "2026-11-26", t: "milan", en: "Milan come back from 2–0 down to win 4–2 at Olympiacos: Pulisic volleys in the winner and sets up the fourth", it: "Il Milan rimonta dallo 0–2 e vince 4–2 in casa dell'Olympiacos: Pulisic segna al volo il gol vittoria e serve l'assist del poker" },
   ],
 
   /* Every assist for Milan (25, checked against the Flashscore season totals). Used by "On this day". */
@@ -244,12 +246,14 @@ window.SITE_DATA = {
       { date: "2026-03-21", comp: "Serie A", opp: "Torino", n: 1 },
       { date: "2026-05-17", comp: "Serie A", opp: "Genoa", n: 1 },
       { date: "2026-09-12", comp: "Serie A", opp: "Lazio", n: 1 },
+      { date: "2026-11-26", comp: "Europa League", opp: "Olympiacos", n: 1 },
     ],
   },
   goals: {
     partial: false,
     asOf: "2026-11-10",
     list: [
+      {"date": "2026-11-26", "comp": "Europa League", "home": "Olympiacos", "away": "AC Milan", "score": "2–4", "minutes": ["71'"], "season": "2026/27"},
       {"date": "2026-11-08", "comp": "Serie A", "home": "Genoa", "away": "AC Milan", "score": "1–2", "minutes": ["19'"], "season": "2026/27"},
       {"date": "2026-10-31", "comp": "Serie A", "home": "AC Milan", "away": "Inter", "score": "3–1", "minutes": ["4'"], "season": "2026/27"},
       {"date": "2026-10-25", "comp": "Serie A", "home": "Udinese", "away": "AC Milan", "score": "0–2", "minutes": ["6'"], "season": "2026/27"},
@@ -304,7 +308,14 @@ window.SITE_DATA = {
   // goal/assist banners (48 h). The updater adds these itself; a hand-made one is only needed when the automatic check missed it.
   events: [
     { team: "usa", g: 2, a: 0, total: 35, at: "2026-11-14T23:20:00Z" }, // brace vs Haiti, CONCACAF Nations League QF 1st leg
+    { team: "milan", g: 1, a: 1, date: "2026-11-26", home: "Olympiacos", away: "AC Milan", score: "2–4", at: "2026-11-26T19:40:00Z" }, // Europa League MD5
   ],
+
+  /* Goals and assists for Milan the hourly script can't see (it only follows Serie A): cups and Europe.
+     Added to the Milan totals and the season line, like the automatic Serie A log. */
+  manualLog: {
+    "2026-11-26": { g: 1, a: 1 }, // Olympiacos 2–4 Milan, Europa League: goal 71', assist for Moreira 90+5'
+  },
 
   honours: [
     { year: "2017", title: "DFB-Pokal", team: "Borussia Dortmund" },
