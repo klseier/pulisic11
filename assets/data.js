@@ -212,6 +212,8 @@ window.SITE_DATA = {
     { d: "2026-06-12", t: "usa", en: "Assist as the USA beat Paraguay 4–1 at their home World Cup", it: "Assist nel 4–1 degli USA al Paraguay, al Mondiale in casa" },
     { d: "2026-07-01", t: "usa", en: "USA beat Bosnia 2–0: their first World Cup knockout win since 2002", it: "USA-Bosnia 2–0: prima vittoria a eliminazione diretta al Mondiale dal 2002" },
     { d: "2026-07-06", t: "usa", en: "World Cup round of 16: the USA lose 4–1 to Belgium in Seattle", it: "Ottavi del Mondiale: gli USA perdono 4–1 col Belgio a Seattle" },
+    { d: "2026-11-14", t: "usa", en: "Brace in a 6–0 win over Haiti: 35 goals, past Eric Wynalda into fourth on the USA’s all-time list", it: "Doppietta nel 6–0 ad Haiti: 35 gol, supera Eric Wynalda ed è quarto nella storia degli USA" },
+    { d: "2026-11-17", t: "usa", en: "Overhead-kick goal against Haiti in Mauricio Pochettino’s last game as USA coach", it: "Gol in rovesciata contro Haiti nell'ultima partita di Mauricio Pochettino da ct degli USA" },
   ],
 
   /* Every assist for Milan (25, checked against the Flashscore season totals). Used by "On this day". */
