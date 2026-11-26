@@ -420,6 +420,26 @@
 
   /* "On this day": curated milestones + every Milan goal, matched on today's month and day */
   var otdItems = [], otdIdx = 0, otdTimer = null;
+  // the minute only matters when it is a story: very early (≤5'), late (85'+) or a penalty
+  function goalFact(n, opp, mins) {
+    var info = mins.map(function (x) {
+      var base = parseInt(x, 10), clean = String(x).replace(/\s*\(pen\.?\)/i, "");
+      return { base: base, min: clean, pen: /pen/i.test(x), early: base <= 5, late: base >= 85 };
+    });
+    if (n === 1 && info.length === 1) {
+      var g = info[0];
+      if (g.pen && g.late) return t("otd.goalLatePen", { opp: opp, min: g.min });
+      if (g.pen) return t("otd.goalPen", { opp: opp });
+      if (g.early) return t("otd.goalEarly", { opp: opp, m: g.base });
+      if (g.late) return t("otd.goalLate", { opp: opp, min: g.min });
+      return t("otd.goal", { opp: opp });
+    }
+    var text = t(n >= 3 ? "otd.hat" : n === 2 ? "otd.brace" : "otd.goal", { opp: opp });
+    if (info.some(function (x) { return x.pen; })) text += t("otd.withPen");
+    var notable = info.filter(function (x) { return x.early || x.late; }).map(function (x) { return x.min; });
+    if (notable.length) text += " (" + notable.join(", ") + ")";
+    return text;
+  }
   function otdPool() {
     var pool = (D.history || []).map(function (h) { return { d: h.d, t: h.t, text: h[lang] || h.en }; });
     var seen = {};
@@ -429,7 +449,7 @@
     ((D.goals && D.goals.list) || []).forEach(function (g) {
       if (seen[g.date]) return;
       var n = goalCount(g), opp = /milan/i.test(g.home) ? g.away : g.home, a = ast[g.date];
-      var text = t(n >= 3 ? "otd.hat" : n === 2 ? "otd.brace" : "otd.goal", { opp: opp }) + (g.minutes && g.minutes.length ? " (" + g.minutes.join(", ") + ")" : "");
+      var text = goalFact(n, opp, g.minutes || []);
       if (a) text += t(a.n > 1 ? "otd.andAst2" : "otd.andAst");
       seen[g.date] = true;
       pool.push({ d: g.date, t: "milan", text: text });
