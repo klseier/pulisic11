@@ -80,7 +80,7 @@ window.SITE_DATA = {
     { team: "usa", comp: "CONCACAF Nations League · QF 1st leg", home: "Haiti", away: "USA", date: "2026-11-14T16:30:00-05:00", venue: "Nu Stadium, Miami" },
     { team: "usa", comp: "CONCACAF Nations League · QF 2nd leg", home: "USA", away: "Haiti", date: "2026-11-17T19:00:00-05:00", venue: "TQL Stadium, Cincinnati" },
     { team: "milan", comp: "Serie A · MD 12", home: "AC Milan", away: "Frosinone", date: "2026-11-22T18:00:00+01:00", venue: "San Siro, Milano" },
-    { team: "milan", comp: "Europa League · MD 5", home: "Olympiacos", away: "AC Milan", date: "2026-11-26T21:00:00+01:00", venue: "Piraeus", timeTbc: true },
+    { team: "milan", comp: "Europa League · MD 5", home: "Olympiacos", away: "AC Milan", date: "2026-11-26T18:45:00+01:00", venue: "Georgios Karaiskakis, Piraeus" },
     { team: "milan", comp: "Serie A · MD 13", home: "Cagliari", away: "AC Milan", date: "2026-11-30T20:45:00+01:00", venue: "Cagliari" },
     { team: "milan", comp: "Serie A · MD 14", home: "AC Milan", away: "Parma", date: "2026-12-06T20:45:00+01:00", venue: "San Siro, Milano" },
     { team: "milan", comp: "Europa League · MD 6", home: "AC Milan", away: "Sunderland", date: "2026-12-10T21:00:00+01:00", venue: "San Siro, Milano", timeTbc: true },
